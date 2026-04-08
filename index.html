@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cartório Chapecó — Painel de Documentos</title>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f2f7; color: #1e293b; font-size: 14px; min-height: 100vh; }
+
+  /* ── Setup screen ── */
+  #setup-screen {
+    position: fixed; inset: 0; background: #f0f2f7;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000; padding: 20px;
+  }
+  #setup-screen.hidden { display: none; }
+  .setup-card {
+    background: #fff; border: 1.5px solid #e2e8f0; border-radius: 18px;
+    padding: 36px; width: 580px; max-width: 100%;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.1);
+  }
+  .setup-card h2 { font-size: 20px; font-weight: 800; color: #1e293b; margin-bottom: 6px; }
+  .setup-card .subtitle { font-size: 13px; color: #64748b; margin-bottom: 22px; line-height: 1.6; }
+  .step { background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; }
+  .step-num { font-size: 10px; font-weight: 800; color: #2563eb; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 5px; }
+  .step p { font-size: 13px; color: #374151; line-height: 1.6; margin: 0; }
+  .step a { color: #2563eb; font-weight: 600; text-decoration: none; }
+  .step a:hover { text-decoration: underline; }
+  .step code { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 4px; padding: 1px 6px; font-size: 12px; font-family: monospace; color: #1d4ed8; }
+  .input-label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-top: 10px; margin-bottom: 5px; }
+  .setup-input { width: 100%; border: 1.5px solid #d1d9e8; border-radius: 8px; padding: 10px 13px; font-size: 13px; font-family: monospace; outline: none; color: #1e293b; transition: border-color 0.2s; }
+  .setup-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+  .setup-btn { width: 100%; margin-top: 18px; padding: 13px; background: #2563eb; color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; transition: background 0.15s; }
+  .setup-btn:hover { background: #1d4ed8; }
+  .setup-error { color: #b91c1c; font-size: 12px; margin-top: 8px; display: none; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 6px; padding: 8px 12px; }
+  .reset-link { display: block; text-align: center; margin-top: 12px; font-size: 12px; color: #94a3b8; cursor: pointer; }
+  .reset-link:hover { color: #64748b; }
+
+  /* ── Loading ── */
+  #loading { position: fixed; inset: 0; background: #f0f2f7; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 500; gap: 14px; }
+  #loading.hidden { display: none; }
+  .spin { width: 42px; height: 42px; border: 4px solid #dbeafe; border-top-color: #2563eb; border-radius: 50%; animation: rotate 0.8s linear infinite; }
+  @keyframes rotate { to { transform: rotate(360deg); } }
+  #loading p { font-size: 14px; color: #64748b; }
+
+  /* ── Header ── */
+  header { background: #1e3a5f; padding: 13px 22px; display: flex; align-items: center; justify-content: space-between; gap: 12px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.2); flex-wrap: wrap; }
+  .brand h1 { font-size: 17px; font-weight: 700; color: #fff; }
+  .brand p  { font-size: 12px; color: #93c5fd; margin-top: 2px; }
+  .controls { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
+  select, input[type="text"] { background: #fff; border: 1.5px solid #cbd5e1; color: #1e293b; padding: 6px 11px; border-radius: 7px; font-size: 13px; outline: none; height: 34px; transition: border-color 0.2s; }
+  select:focus, input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+  #searchInput { width: 220px; }
+  input::placeholder { color: #94a3b8; }
+  .btn { height: 34px; padding: 0 16px; border-radius: 7px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .btn-primary { background: #2563eb; color: #fff; }
+  .btn-primary:hover { background: #1d4ed8; }
+  .btn-ghost { background: #fff; color: #475569; border: 1.5px solid #cbd5e1; }
+  .btn-ghost:hover { border-color: #3b82f6; color: #2563eb; }
+  .btn-sm { height: 28px; padding: 0 10px; font-size: 12px; border-radius: 6px; border: none; cursor: pointer; background: rgba(255,255,255,0.15); color: #fff; transition: background 0.15s; }
+  .btn-sm:hover { background: rgba(255,255,255,0.25); }
+
+  /* ── Sync bar ── */
+  .sync-bar { padding: 6px 22px; font-size: 12px; display: flex; align-items: center; gap: 8px; font-weight: 500; border-bottom: 1px solid; }
+  .sync-bar.loading { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+  .sync-bar.ok      { background: #f0fdf4; border-color: #bbf7d0; color: #15803d; }
+  .sync-bar.error   { background: #fff1f2; border-color: #fecdd3; color: #be123c; }
+  .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+  .sync-dot.spinning { animation: rotate 1s linear infinite; border-radius: 0; background: none; border: 2px solid currentColor; border-top-color: transparent; }
+
+  /* ── Stats ── */
+  .stats-bar { display: flex; gap: 6px; padding: 10px 22px; background: #fff; border-bottom: 1px solid #e2e8f0; overflow-x: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+  .stats-bar::-webkit-scrollbar { height: 3px; }
+  .stats-bar::-webkit-scrollbar-thumb { background: #cbd5e1; }
+  .stat-pill { display: flex; align-items: center; gap: 6px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 20px; padding: 5px 14px; font-size: 12px; white-space: nowrap; font-weight: 500; }
+  .sd { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .sc { font-weight: 800; font-size: 15px; color: #1e293b; }
+
+  /* ── Board ── */
+  .board { display: flex; gap: 16px; padding: 18px 22px 40px; overflow-x: auto; align-items: flex-start; min-height: calc(100vh - 190px); }
+
+  /* ── Column ── */
+  .column { background: #e8ecf3; border: 1.5px solid #d1d9e8; border-radius: 14px; width: 310px; min-width: 310px; display: flex; flex-direction: column; max-height: calc(100vh - 206px); }
+  .col-head { padding: 11px 14px 9px; border-bottom: 1.5px solid #d1d9e8; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; border-radius: 14px 14px 0 0; background: #dde3ef; }
+  .col-name { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #1e293b; }
+  .col-bar  { width: 4px; height: 16px; border-radius: 2px; flex-shrink: 0; }
+  .col-cnt  { background: #fff; border: 1.5px solid #c8d0e0; color: #475569; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 12px; }
+  .col-body { overflow-y: auto; padding: 9px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+  .col-body::-webkit-scrollbar { width: 4px; }
+  .col-body::-webkit-scrollbar-thumb { background: #c8d0e0; border-radius: 2px; }
+  .col-body.drag-over { background: rgba(37,99,235,0.06); border-radius: 8px; outline: 2px dashed #93c5fd; outline-offset: -3px; }
+  .col-empty { text-align: center; color: #94a3b8; font-size: 13px; padding: 30px 0; font-style: italic; }
+  .add-btn { margin: 6px 9px 9px; padding: 8px; background: transparent; border: 1.5px dashed #b0bdd0; border-radius: 8px; color: #64748b; font-size: 13px; cursor: pointer; transition: all 0.15s; text-align: center; flex-shrink: 0; }
+  .add-btn:hover { border-color: #3b82f6; color: #2563eb; background: rgba(37,99,235,0.04); }
+
+  /* ── Card ── */
+  .card { background: #fff; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 11px 12px 10px 15px; cursor: grab; transition: transform 0.12s, border-color 0.12s, box-shadow 0.12s; user-select: none; position: relative; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.07); }
+  .card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; border-radius: 10px 0 0 10px; }
+  .card.prio-Alta::before   { background: #ef4444; }
+  .card.prio-Média::before  { background: #f59e0b; }
+  .card.prio-Normal::before { background: #cbd5e1; }
+  .card:hover { border-color: #3b82f6; box-shadow: 0 4px 14px rgba(37,99,235,0.12); transform: translateY(-1px); }
+  .card.dragging { opacity: 0.4; cursor: grabbing; }
+  .card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; gap: 6px; }
+  .card-aba { font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: #2563eb; }
+  .pchip { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; flex-shrink: 0; }
+  .pchip.Alta  { background: #fee2e2; color: #b91c1c; }
+  .pchip.Média { background: #fef3c7; color: #92400e; }
+  .pchip.Normal { display: none; }
+  .card-desc { font-size: 13px; color: #1e293b; line-height: 1.5; margin-bottom: 9px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .card-meta { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  .cm { font-size: 11px; padding: 2px 7px; border-radius: 5px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+  .cm-recv  { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+  .cm-apres { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+  .cm-tel   { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+  .cm-date  { color: #94a3b8; font-family: monospace; font-size: 11px; margin-left: auto; }
+  .pz { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 5px; flex-shrink: 0; }
+  .pz-r { background: #fee2e2; color: #b91c1c; }
+  .pz-y { background: #fef3c7; color: #92400e; }
+  .pz-g { background: #dcfce7; color: #15803d; }
+
+  /* ── Modal ── */
+  .overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.5); z-index: 200; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); padding: 20px; }
+  .overlay.open { display: flex; }
+  .modal { background: #fff; border: 1.5px solid #e2e8f0; border-radius: 16px; width: 620px; max-width: 100%; max-height: 92vh; overflow-y: auto; box-shadow: 0 24px 80px rgba(0,0,0,0.15); }
+  .modal::-webkit-scrollbar { width: 4px; }
+  .modal::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
+  .mhead { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px 14px; border-bottom: 1.5px solid #f1f5f9; position: sticky; top: 0; background: #fff; z-index: 1; }
+  .mhead h2 { font-size: 16px; font-weight: 700; color: #1e293b; }
+  .mclose { background: #f1f5f9; border: none; color: #64748b; font-size: 16px; cursor: pointer; border-radius: 6px; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; }
+  .mclose:hover { background: #fee2e2; color: #b91c1c; }
+  .mbody { padding: 18px 22px; }
+  .mfoot { display: flex; gap: 8px; justify-content: flex-end; padding: 14px 22px 18px; border-top: 1.5px solid #f1f5f9; background: #f8fafc; border-radius: 0 0 16px 16px; }
+  .fgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .fgrid .s2 { grid-column: 1 / -1; }
+  .fsec { grid-column: 1 / -1; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #94a3b8; padding: 8px 0 4px; border-bottom: 1.5px solid #f1f5f9; margin-top: 4px; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-size: 11px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: #64748b; }
+  .field .ro { font-size: 13px; color: #334155; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 7px; padding: 8px 11px; line-height: 1.5; min-height: 36px; word-break: break-word; }
+  .field input, .field select, .field textarea { width: 100%; background: #fff; border: 1.5px solid #d1d9e8; color: #1e293b; padding: 8px 11px; border-radius: 7px; font-size: 13px; outline: none; font-family: inherit; transition: border-color 0.2s; }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+  .field textarea { resize: vertical; min-height: 72px; line-height: 1.5; }
+
+  /* ── Toast ── */
+  .toast { position: fixed; bottom: 22px; right: 22px; background: #1e293b; border-radius: 10px; padding: 11px 18px; font-size: 13px; color: #fff; z-index: 400; transform: translateY(80px); opacity: 0; transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1); max-width: 300px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+  .toast.show { transform: translateY(0); opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════
+     TELA DE CONFIGURAÇÃO DO FIREBASE (aparece só na 1ª vez)
+═══════════════════════════════════════════════════════════ -->
+<div id="setup-screen">
+  <div class="setup-card">
+    <h2>🔧 Conectar ao banco de dados</h2>
+    <p class="subtitle">Esta configuração é feita <strong>uma única vez por computador</strong>. O banco de dados é gratuito e ilimitado para este uso.</p>
+
+    <div class="step">
+      <div class="step-num">✅ Passo 1 — Criar projeto Firebase (já feito?)</div>
+      <p>Acesse <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> → <strong>"Adicionar projeto"</strong> → nome: <code>cartorio-chapeco</code> → desative Google Analytics → <strong>"Criar projeto"</strong>.</p>
+    </div>
+
+    <div class="step">
+      <div class="step-num">✅ Passo 2 — Criar o Realtime Database</div>
+      <p>No menu lateral: <strong>"Criar" → "Realtime Database"</strong> → <strong>"Criar banco de dados"</strong> → localização: <code>us-central1</code> → selecione <strong>"Iniciar no modo de teste"</strong> → <strong>"Ativar"</strong>.</p>
+    </div>
+
+    <div class="step">
+      <div class="step-num">📋 Passo 3 — Copiar a URL e colar abaixo</div>
+      <p>Após criar, a URL aparece no topo da página do banco. Ela termina com <code>.firebaseio.com</code>.</p>
+      <p style="margin-top:6px">Exemplo: <code>https://cartorio-chapeco-default-rtdb.firebaseio.com</code></p>
+      <label class="input-label">URL do Realtime Database</label>
+      <input class="setup-input" id="firebaseUrl" type="text"
+             placeholder="https://seu-projeto-default-rtdb.firebaseio.com"
+             onkeydown="if(event.key==='Enter') setupFirebase()">
+      <div class="setup-error" id="setupError">
+        ❌ URL inválida. Deve começar com <code>https://</code> e terminar com <code>.firebaseio.com</code>
+      </div>
+    </div>
+
+    <button class="setup-btn" onclick="setupFirebase()">✓ Conectar e abrir o painel</button>
+    <span class="reset-link" onclick="showSetup()">Trocar URL do banco de dados</span>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     LOADING
+═══════════════════════════════════════════════════════════ -->
+<div id="loading" class="hidden">
+  <div class="spin"></div>
+  <p id="loadingMsg">Conectando ao banco de dados compartilhado...</p>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     APP PRINCIPAL
+═══════════════════════════════════════════════════════════ -->
+<header>
+  <div class="brand">
+    <h1>📋 Painel de Documentos</h1>
+    <p>Cartório de Registro Civil e PJ — Chapecó/SC &nbsp;·&nbsp; <span id="totalSpan">…</span> registros</p>
+  </div>
+  <div class="controls">
+    <input type="text" id="searchInput" placeholder="Buscar descrição, telefone, nome..." oninput="applyFilters()">
+    <select id="fPrio" onchange="applyFilters()">
+      <option value="">Prioridade</option>
+      <option value="Alta">Alta</option>
+      <option value="Média">Média</option>
+      <option value="Normal">Normal</option>
+    </select>
+    <select id="fAba" onchange="applyFilters()"><option value="">Serviço / Aba</option></select>
+    <select id="fRecv" onchange="applyFilters()"><option value="">Responsável</option></select>
+    <select id="fSit" onchange="applyFilters()">
+      <option value="">Todas as situações</option>
+      <option value="Em andamento">Em Andamento</option>
+      <option value="Nota Devolutiva">Nota Devolutiva</option>
+      <option value="Aguard. Retorno ND">Aguard. Retorno ND</option>
+      <option value="Concluído">Concluído</option>
+      <option value="Arquivado">Arquivado</option>
+    </select>
+    <button class="btn btn-ghost" onclick="resetFilters()">Limpar</button>
+    <button class="btn btn-primary" onclick="openAdd()">+ Novo</button>
+    <button class="btn-sm" onclick="showSetup()" title="Reconectar banco de dados">⚙</button>
+  </div>
+</header>
+
+<div class="sync-bar loading" id="syncBar">
+  <div class="sync-dot spinning" id="syncDot"></div>
+  <span id="syncMsg">Conectando...</span>
+</div>
+
+<div class="stats-bar" id="statsBar"></div>
+<div class="board" id="board"></div>
+
+<!-- Modal -->
+<div class="overlay" id="overlay" onclick="onOverlayClick(event)">
+  <div class="modal">
+    <div class="mhead">
+      <h2 id="mTitle">Documento</h2>
+      <button class="mclose" onclick="closeModal()">✕</button>
+    </div>
+    <div class="mbody" id="mBody"></div>
+    <div class="mfoot" id="mFoot"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="kanban_data.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════
+//  CONSTANTES
+// ═══════════════════════════════════════════════════════════════════
+const FIREBASE_KEY = 'cartorio_firebase_url_v1';
+const DB_PATH      = 'kanban';
+
+const COLS = [
+  { id: 'Em andamento',       label: 'Em Andamento',       color: '#3b82f6' },
+  { id: 'Nota Devolutiva',    label: 'Nota Devolutiva',    color: '#ef4444' },
+  { id: 'Aguard. Retorno ND', label: 'Aguard. Retorno ND', color: '#f59e0b' },
+  { id: 'Concluído',          label: 'Concluído',          color: '#22c55e' },
+  { id: 'Arquivado',          label: 'Arquivado',          color: '#94a3b8' },
+];
+
+const ABAS = [
+  'PJ - Estatuto/Contrato','PJ - Atas','PJ - Certidão','PJ - Inteiro Teor','PJ - Livro Diário','PJ - Outros',
+  'RCPN - Inteiro Teor','RCPN - Retificação','RCPN - Divórcio','RCPN - Emancipação',
+  'RCPN - União Estável','RCPN - Traslado','RCPN - 2ª Via','RCPN - Outros',
+  'RTD - Notificações','RTD - Doc. Estrangeiro','RTD - Negativa Ônus',
+  'RTD - Inteiro Teor','RTD - Certidão','RTD - Atas','RTD - Outros',
+];
+
+// ═══════════════════════════════════════════════════════════════════
+//  ESTADO
+// ═══════════════════════════════════════════════════════════════════
+let cards = [], vis = new Set(), dragId = null, editId = null, db = null;
+
+// ═══════════════════════════════════════════════════════════════════
+//  SETUP
+// ═══════════════════════════════════════════════════════════════════
+function showSetup() {
+  document.getElementById('setup-screen').classList.remove('hidden');
+}
+
+function setupFirebase() {
+  const url = document.getElementById('firebaseUrl').value.trim();
+  const err = document.getElementById('setupError');
+  if (!url.startsWith('https://') || !url.includes('firebaseio.com')) {
+    err.style.display = 'block'; return;
+  }
+  err.style.display = 'none';
+  localStorage.setItem(FIREBASE_KEY, url);
+  document.getElementById('setup-screen').classList.add('hidden');
+  connectFirebase(url);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  FIREBASE
+// ═══════════════════════════════════════════════════════════════════
+function connectFirebase(url) {
+  document.getElementById('loading').classList.remove('hidden');
+  setSyncStatus('loading', 'Conectando ao banco compartilhado...');
+  try {
+    // Evita inicializar duas vezes
+    let app;
+    try { app = firebase.app(); } catch(e) { app = firebase.initializeApp({ databaseURL: url }); }
+    db = firebase.database(app);
+    listenFirebase();
+  } catch(e) {
+    document.getElementById('loading').classList.add('hidden');
+    setSyncStatus('error', '❌ Erro ao conectar: ' + e.message);
+    showToast('❌ Erro de conexão. Clique em ⚙ para corrigir.');
+  }
+}
+
+function listenFirebase() {
+  db.ref(DB_PATH).on('value', snapshot => {
+    const data = snapshot.val() || {};
+    buildCards(data);
+    document.getElementById('loading').classList.add('hidden');
+    setSyncStatus('ok', '🟢 Online — alterações salvas e visíveis para todos em tempo real');
+  }, err => {
+    document.getElementById('loading').classList.add('hidden');
+    setSyncStatus('error', '❌ Erro de leitura: ' + err.message + ' — Recarregue a página.');
+  });
+}
+
+function buildCards(data) {
+  const overrides = data.overrides ? Object.values(data.overrides) : [];
+  const newCards  = data.newCards  ? Object.values(data.newCards)  : [];
+  cards = INITIAL_DATA.map(c => {
+    const ov = overrides.find(o => o && o.id === c.id);
+    return ov ? { ...c, ...ov } : { ...c };
+  });
+  newCards.forEach(nc => { if (nc && !cards.find(c => c.id === nc.id)) cards.push(nc); });
+  document.getElementById('totalSpan').textContent = cards.length.toLocaleString('pt-BR');
+  if (document.getElementById('fAba').options.length <= 1) populateFilters();
+  applyFilters();
+}
+
+async function saveItem(type, payload) {
+  if (!db) { showToast('❌ Sem conexão com o banco.'); return false; }
+  setSyncStatus('loading', '💾 Salvando...');
+  try {
+    const key = String(payload.id).replace(/[.#$[\]/]/g, '_');
+    await db.ref(`${DB_PATH}/${type}/${key}`).set(payload);
+    setSyncStatus('ok', `✓ Salvo às ${new Date().toLocaleTimeString('pt-BR')} — visível para todos`);
+    return true;
+  } catch(e) {
+    setSyncStatus('error', '❌ Erro ao salvar: ' + e.message);
+    showToast('❌ Erro ao salvar. Verifique a conexão.');
+    return false;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  INICIALIZAÇÃO
+// ═══════════════════════════════════════════════════════════════════
+(function init() {
+  const savedUrl = localStorage.getItem(FIREBASE_KEY);
+  if (savedUrl) {
+    document.getElementById('setup-screen').classList.add('hidden');
+    connectFirebase(savedUrl);
+  }
+  // Se não há URL salva, a tela de setup já está visível (padrão do HTML)
+})();
+
+// ═══════════════════════════════════════════════════════════════════
+//  FILTROS
+// ═══════════════════════════════════════════════════════════════════
+function populateFilters() {
+  const selA = document.getElementById('fAba');
+  while (selA.options.length > 1) selA.remove(1);
+  [...new Set(cards.map(c => c.aba).filter(Boolean))].sort()
+    .forEach(a => selA.appendChild(new Option(a, a)));
+
+  const selR = document.getElementById('fRecv');
+  while (selR.options.length > 1) selR.remove(1);
+  [...new Set(cards.map(c => (c.recebido||'').trim()).filter(Boolean))].sort()
+    .forEach(r => selR.appendChild(new Option(r, r)));
+}
+
+function applyFilters() {
+  const q    = document.getElementById('searchInput').value.toLowerCase().trim();
+  const prio = document.getElementById('fPrio').value;
+  const aba  = document.getElementById('fAba').value;
+  const recv = document.getElementById('fRecv').value;
+  const sit  = document.getElementById('fSit').value;
+  vis = new Set(cards.filter(c => {
+    if (prio && c.priority !== prio) return false;
+    if (aba  && c.aba !== aba) return false;
+    if (recv && (c.recebido||'').trim() !== recv) return false;
+    if (sit  && c.situacao !== sit) return false;
+    if (q) {
+      const hay = [c.descricao,c.protocolo,c.aba,c.telefone,c.recebido,c.apresentado_por,c.nome_retirou].join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  }).map(c => c.id));
+  renderBoard(); renderStats();
+}
+
+function resetFilters() {
+  ['searchInput','fPrio','fAba','fRecv','fSit'].forEach(id => { document.getElementById(id).value = ''; });
+  applyFilters();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════════════════════════════
+function renderBoard() {
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  COLS.forEach(col => {
+    const cc = cards.filter(c => c.situacao === col.id && vis.has(c.id));
+    const d = document.createElement('div');
+    d.className = 'column';
+    d.innerHTML = `
+      <div class="col-head">
+        <div class="col-name"><div class="col-bar" style="background:${col.color}"></div>${col.label}</div>
+        <span class="col-cnt">${cc.length}</span>
+      </div>
+      <div class="col-body" id="cb-${eid(col.id)}"
+           ondragover="dOver(event)" ondragenter="dEnter(event)"
+           ondragleave="dLeave(event)" ondrop="dDrop(event,'${col.id}')">
+        ${cc.length ? cc.map(renderCard).join('') : '<div class="col-empty">Nenhum documento nesta coluna</div>'}
+      </div>
+      <button class="add-btn" onclick="openAdd('${col.id}')">+ Adicionar documento</button>`;
+    board.appendChild(d);
+  });
+}
+
+function eid(s) { return s.replace(/[^a-zA-Z0-9]/g,'_'); }
+
+function renderCard(c) {
+  const desc = (c.descricao||'').trim() || '(sem descrição)';
+  let pzEl = '';
+  if (c.prazo != null) {
+    const cls = c.prazo <= 30 ? 'pz pz-r' : c.prazo <= 180 ? 'pz pz-y' : 'pz pz-g';
+    pzEl = `<span class="${cls}">${c.prazo}d</span>`;
+  }
+  return `
+    <div class="card prio-${c.priority}" id="card-${c.id}"
+         draggable="true" ondragstart="dStart(event,'${c.id}')" ondragend="dEnd()"
+         onclick="openEdit('${c.id}')">
+      <div class="card-top">
+        <div class="card-aba">${esc(c.aba)}</div>
+        <div class="pchip ${c.priority}">${c.priority}</div>
+      </div>
+      <div class="card-desc">${esc(desc)}</div>
+      <div class="card-meta">
+        ${c.recebido        ? `<span class="cm cm-recv"  title="Recebido por">👤 ${esc(c.recebido)}</span>` : ''}
+        ${c.apresentado_por ? `<span class="cm cm-apres" title="Apresentado por">🧑‍💼 ${esc(c.apresentado_por)}</span>` : ''}
+        ${c.telefone        ? `<span class="cm cm-tel"   title="Telefone">📞 ${esc(c.telefone)}</span>` : ''}
+        <span class="cm cm-date">${c.data_entrada||''}</span>
+        ${pzEl}
+      </div>
+    </div>`;
+}
+
+function renderStats() {
+  const cnt = {};
+  COLS.forEach(c => cnt[c.id] = 0);
+  cards.filter(c => vis.has(c.id)).forEach(c => { if (c.situacao in cnt) cnt[c.situacao]++; });
+  document.getElementById('statsBar').innerHTML =
+    COLS.map(col => `<div class="stat-pill">
+      <div class="sd" style="background:${col.color}"></div>${col.label}<span class="sc">${cnt[col.id]}</span>
+    </div>`).join('') +
+    `<div class="stat-pill" style="margin-left:auto;background:#eff6ff;border-color:#bfdbfe">
+       <div class="sd" style="background:#6366f1"></div>Filtrado<span class="sc" style="color:#4338ca">${vis.size}</span>
+     </div>`;
+}
+
+function setSyncStatus(type, msg) {
+  const bar = document.getElementById('syncBar');
+  bar.className = 'sync-bar ' + type;
+  document.getElementById('syncDot').className = 'sync-dot' + (type === 'loading' ? ' spinning' : '');
+  document.getElementById('syncMsg').textContent = msg;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  DRAG & DROP
+// ═══════════════════════════════════════════════════════════════════
+function dStart(e, id) {
+  dragId = id; e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => document.getElementById('card-'+id)?.classList.add('dragging'), 0);
+}
+function dEnd() {
+  if (dragId) document.getElementById('card-'+dragId)?.classList.remove('dragging');
+  dragId = null;
+  document.querySelectorAll('.col-body.drag-over').forEach(el => el.classList.remove('drag-over'));
+}
+function dOver(e)  { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
+function dEnter(e) { e.currentTarget.classList.add('drag-over'); }
+function dLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+
+async function dDrop(e, colId) {
+  e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+  if (!dragId) return;
+  const c = cards.find(x => x.id === dragId);
+  if (c && c.situacao !== colId) {
+    c.situacao = colId;
+    const isNew = c.id.startsWith('usr_');
+    await saveItem(isNew ? 'newCards' : 'overrides', buildPayload(c, isNew));
+    showToast(`✓ Movido para "${COLS.find(x => x.id === colId)?.label}"`);
+  }
+  dragId = null;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  MODAL
+// ═══════════════════════════════════════════════════════════════════
+function closeModal() { document.getElementById('overlay').classList.remove('open'); editId = null; }
+function onOverlayClick(e) { if (e.target.id === 'overlay') closeModal(); }
+function showModal(title, body, foot) {
+  document.getElementById('mTitle').textContent = title;
+  document.getElementById('mBody').innerHTML  = body;
+  document.getElementById('mFoot').innerHTML  = foot;
+  document.getElementById('overlay').classList.add('open');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  EDITAR
+// ═══════════════════════════════════════════════════════════════════
+function openEdit(id) {
+  const c = cards.find(x => x.id === id);
+  if (!c) return;
+  editId = id;
+  showModal('Editar Documento', `
+    <div class="fgrid">
+      <div class="fsec">Identificação</div>
+      <div class="field s2"><label>Descrição / Partes</label><div class="ro">${esc(c.descricao||'—')}</div></div>
+      <div class="field"><label>Aba / Serviço</label><div class="ro">${esc(c.aba||'—')}</div></div>
+      <div class="field"><label>Nº Protocolo</label><div class="ro">${esc(c.protocolo||'—')}</div></div>
+      <div class="field"><label>Tipo de Ato</label><div class="ro">${esc(c.tipo||'—')}</div></div>
+      <div class="field"><label>Data de Entrada</label><div class="ro">${c.data_entrada||'—'}</div></div>
+      <div class="field"><label>CNPJ / CPF</label><div class="ro">${esc(c.cnpj||'—')}</div></div>
+      <div class="field"><label>Motivo da Exigência (ND)</label><div class="ro">${esc(c.motivo_nd||'—')}</div></div>
+
+      <div class="fsec">Atendimento</div>
+      <div class="field"><label>Recebido por</label><input id="e_recv" value="${esc(c.recebido||'')}"></div>
+      <div class="field"><label>Apresentado por</label><input id="e_apres" value="${esc(c.apresentado_por||'')}" placeholder="Nome do apresentante"></div>
+      <div class="field s2"><label>Telefone para Contato</label><input id="e_tel" value="${esc(c.telefone||'')}" placeholder="(49) 9 9999-9999"></div>
+
+      <div class="fsec">Situação e Prioridade</div>
+      <div class="field"><label>Situação</label>
+        <select id="e_sit">${COLS.map(col=>`<option value="${col.id}"${c.situacao===col.id?' selected':''}>${col.label}</option>`).join('')}</select>
+      </div>
+      <div class="field"><label>Prioridade</label>
+        <select id="e_prio">
+          <option value="Alta"${c.priority==='Alta'?' selected':''}>Alta</option>
+          <option value="Média"${c.priority==='Média'?' selected':''}>Média</option>
+          <option value="Normal"${c.priority==='Normal'?' selected':''}>Normal</option>
+        </select>
+      </div>
+      <div class="field s2"><label>Observações</label><textarea id="e_obs">${esc(c.observacoes||'')}</textarea></div>
+
+      <div class="fsec">Datas e Entregas</div>
+      <div class="field"><label>Data Conclusão</label><div class="ro">${c.data_conclusao||'—'}</div></div>
+      <div class="field"><label>Data Nota Devolutiva</label><div class="ro">${c.data_nd||'—'}</div></div>
+      <div class="field"><label>Data Retorno</label><div class="ro">${c.data_retorno||'—'}</div></div>
+      <div class="field"><label>Nome de Quem Retirou</label><div class="ro">${esc(c.nome_retirou||'—')}</div></div>
+    </div>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+     <button class="btn btn-primary" onclick="saveEdit()">💾 Salvar para todos</button>`
+  );
+}
+
+async function saveEdit() {
+  const c = cards.find(x => x.id === editId);
+  if (!c) return;
+  c.recebido        = document.getElementById('e_recv').value.trim();
+  c.apresentado_por = document.getElementById('e_apres').value.trim();
+  c.telefone        = document.getElementById('e_tel').value.trim();
+  c.situacao        = document.getElementById('e_sit').value;
+  c.priority        = document.getElementById('e_prio').value;
+  c.observacoes     = document.getElementById('e_obs').value.trim();
+  closeModal();
+  const isNew = c.id.startsWith('usr_');
+  const ok = await saveItem(isNew ? 'newCards' : 'overrides', buildPayload(c, isNew));
+  if (ok) showToast('✓ Atualizado e sincronizado para todos');
+}
+
+function buildPayload(c, isNew) {
+  if (isNew) return { ...c }; // salva tudo para cartões criados pelo usuário
+  // Para cartões da planilha, salva apenas campos editáveis
+  return {
+    id:              c.id,
+    situacao:        c.situacao        || '',
+    priority:        c.priority        || 'Normal',
+    recebido:        c.recebido        || '',
+    apresentado_por: c.apresentado_por || '',
+    telefone:        c.telefone        || '',
+    observacoes:     c.observacoes     || '',
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  NOVO CARTÃO
+// ═══════════════════════════════════════════════════════════════════
+function openAdd(situacao) {
+  editId = null;
+  const def = situacao || 'Em andamento';
+  showModal('Novo Documento', `
+    <div class="fgrid">
+      <div class="fsec">Identificação</div>
+      <div class="field s2"><label>Descrição / Partes *</label>
+        <textarea id="n_desc" placeholder="Descreva o documento ou partes envolvidas..."></textarea>
+      </div>
+      <div class="field"><label>Aba / Serviço *</label>
+        <select id="n_aba">${ABAS.map(a=>`<option value="${a}">${a}</option>`).join('')}<option value="Outro">Outro</option></select>
+      </div>
+      <div class="field"><label>Nº Protocolo</label><input id="n_prot" placeholder="Nº Protocolo"></div>
+      <div class="field"><label>Tipo de Ato</label><input id="n_tipo" placeholder="Ex: 1º Registro de Estatuto"></div>
+      <div class="field"><label>CNPJ / CPF</label><input id="n_cnpj"></div>
+
+      <div class="fsec">Atendimento</div>
+      <div class="field"><label>Recebido por</label><input id="n_recv" placeholder="Nome do atendente"></div>
+      <div class="field"><label>Apresentado por</label><input id="n_apres" placeholder="Nome do apresentante"></div>
+      <div class="field s2"><label>Telefone para Contato</label>
+        <input id="n_tel" placeholder="(49) 9 9999-9999">
+      </div>
+
+      <div class="fsec">Situação</div>
+      <div class="field"><label>Situação</label>
+        <select id="n_sit">${COLS.map(col=>`<option value="${col.id}"${col.id===def?' selected':''}>${col.label}</option>`).join('')}</select>
+      </div>
+      <div class="field"><label>Prioridade</label>
+        <select id="n_prio">
+          <option value="Normal" selected>Normal</option>
+          <option value="Média">Média</option>
+          <option value="Alta">Alta</option>
+        </select>
+      </div>
+      <div class="field s2"><label>Observações</label>
+        <textarea id="n_obs" placeholder="Informações adicionais..."></textarea>
+      </div>
+    </div>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+     <button class="btn btn-primary" onclick="addCard()">➕ Adicionar para todos</button>`
+  );
+}
+
+async function addCard() {
+  const desc = document.getElementById('n_desc').value.trim();
+  if (!desc) { showToast('⚠ Informe a descrição'); return; }
+  const nc = {
+    id:              'usr_' + Date.now(),
+    protocolo:       document.getElementById('n_prot').value.trim()  || '',
+    data_entrada:    new Date().toISOString().slice(0,10),
+    tipo:            document.getElementById('n_tipo').value.trim(),
+    descricao:       desc,
+    cnpj:            document.getElementById('n_cnpj').value.trim(),
+    recebido:        document.getElementById('n_recv').value.trim(),
+    apresentado_por: document.getElementById('n_apres').value.trim(),
+    telefone:        document.getElementById('n_tel').value.trim(),
+    situacao:        document.getElementById('n_sit').value,
+    priority:        document.getElementById('n_prio').value,
+    observacoes:     document.getElementById('n_obs').value.trim(),
+    aba:             document.getElementById('n_aba').value,
+    prazo: null, data_conclusao:'', resp_entrega:'', data_retirada:'',
+    nome_retirou:'', data_nd:'', motivo_nd:'', data_retorno:'', situacao_retorno:'',
+  };
+  closeModal();
+  const ok = await saveItem('newCards', nc);
+  if (ok) showToast('✓ Documento adicionado e visível para todos');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════════════════════════════════
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>
