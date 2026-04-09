@@ -4,29 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cartório Chapecó — Painel de Documentos</title>
-
-<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f2f7; color: #1e293b; font-size: 14px; min-height: 100vh; }
 
-  /* ── Setup screen ── */
-  #setup-screen {
-    position: fixed; inset: 0; background: #f0f2f7;
-    display: flex; align-items: center; justify-content: center;
-    z-index: 1000; padding: 20px;
-  }
+  /* ── Setup ── */
+  #setup-screen { position: fixed; inset: 0; background: #f0f2f7; display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
   #setup-screen.hidden { display: none; }
-  .setup-card {
-    background: #fff; border: 1.5px solid #e2e8f0; border-radius: 18px;
-    padding: 36px; width: 580px; max-width: 100%;
-    box-shadow: 0 8px 40px rgba(0,0,0,0.1);
-  }
+  .setup-card { background: #fff; border: 1.5px solid #e2e8f0; border-radius: 18px; padding: 36px; width: 580px; max-width: 100%; box-shadow: 0 8px 40px rgba(0,0,0,0.1); }
   .setup-card h2 { font-size: 20px; font-weight: 800; color: #1e293b; margin-bottom: 6px; }
-  .setup-card .subtitle { font-size: 13px; color: #64748b; margin-bottom: 22px; line-height: 1.6; }
+  .setup-card .sub { font-size: 13px; color: #64748b; margin-bottom: 22px; line-height: 1.6; }
   .step { background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; }
   .step-num { font-size: 10px; font-weight: 800; color: #2563eb; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 5px; }
   .step p { font-size: 13px; color: #374151; line-height: 1.6; margin: 0; }
@@ -45,8 +34,8 @@
   /* ── Loading ── */
   #loading { position: fixed; inset: 0; background: #f0f2f7; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 500; gap: 14px; }
   #loading.hidden { display: none; }
-  .spin { width: 42px; height: 42px; border: 4px solid #dbeafe; border-top-color: #2563eb; border-radius: 50%; animation: rotate 0.8s linear infinite; }
-  @keyframes rotate { to { transform: rotate(360deg); } }
+  .spin { width: 42px; height: 42px; border: 4px solid #dbeafe; border-top-color: #2563eb; border-radius: 50%; animation: rot 0.8s linear infinite; }
+  @keyframes rot { to { transform: rotate(360deg); } }
   #loading p { font-size: 14px; color: #64748b; }
 
   /* ── Header ── */
@@ -55,9 +44,9 @@
   .brand p  { font-size: 12px; color: #93c5fd; margin-top: 2px; }
   .controls { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
   select, input[type="text"] { background: #fff; border: 1.5px solid #cbd5e1; color: #1e293b; padding: 6px 11px; border-radius: 7px; font-size: 13px; outline: none; height: 34px; transition: border-color 0.2s; }
-  select:focus, input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+  select:focus, input[type="text"]:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
   #searchInput { width: 220px; }
-  input::placeholder { color: #94a3b8; }
+  input[type="text"]::placeholder { color: #94a3b8; }
   .btn { height: 34px; padding: 0 16px; border-radius: 7px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
   .btn-primary { background: #2563eb; color: #fff; }
   .btn-primary:hover { background: #1d4ed8; }
@@ -72,7 +61,7 @@
   .sync-bar.ok      { background: #f0fdf4; border-color: #bbf7d0; color: #15803d; }
   .sync-bar.error   { background: #fff1f2; border-color: #fecdd3; color: #be123c; }
   .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
-  .sync-dot.spinning { animation: rotate 1s linear infinite; border-radius: 0; background: none; border: 2px solid currentColor; border-top-color: transparent; }
+  .sync-dot.spinning { animation: rot 1s linear infinite; background: none; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; }
 
   /* ── Stats ── */
   .stats-bar { display: flex; gap: 6px; padding: 10px 22px; background: #fff; border-bottom: 1px solid #e2e8f0; overflow-x: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
@@ -89,8 +78,8 @@
   .column { background: #e8ecf3; border: 1.5px solid #d1d9e8; border-radius: 14px; width: 310px; min-width: 310px; display: flex; flex-direction: column; max-height: calc(100vh - 206px); }
   .col-head { padding: 11px 14px 9px; border-bottom: 1.5px solid #d1d9e8; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; border-radius: 14px 14px 0 0; background: #dde3ef; }
   .col-name { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #1e293b; }
-  .col-bar  { width: 4px; height: 16px; border-radius: 2px; flex-shrink: 0; }
-  .col-cnt  { background: #fff; border: 1.5px solid #c8d0e0; color: #475569; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 12px; }
+  .col-bar { width: 4px; height: 16px; border-radius: 2px; flex-shrink: 0; }
+  .col-cnt { background: #fff; border: 1.5px solid #c8d0e0; color: #475569; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 12px; }
   .col-body { overflow-y: auto; padding: 9px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
   .col-body::-webkit-scrollbar { width: 4px; }
   .col-body::-webkit-scrollbar-thumb { background: #c8d0e0; border-radius: 2px; }
@@ -128,7 +117,7 @@
   /* ── Modal ── */
   .overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.5); z-index: 200; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); padding: 20px; }
   .overlay.open { display: flex; }
-  .modal { background: #fff; border: 1.5px solid #e2e8f0; border-radius: 16px; width: 620px; max-width: 100%; max-height: 92vh; overflow-y: auto; box-shadow: 0 24px 80px rgba(0,0,0,0.15); }
+  .modal { background: #fff; border: 1.5px solid #e2e8f0; border-radius: 16px; width: 660px; max-width: 100%; max-height: 92vh; overflow-y: auto; box-shadow: 0 24px 80px rgba(0,0,0,0.15); }
   .modal::-webkit-scrollbar { width: 4px; }
   .modal::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
   .mhead { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px 14px; border-bottom: 1.5px solid #f1f5f9; position: sticky; top: 0; background: #fff; z-index: 1; }
@@ -137,14 +126,36 @@
   .mclose:hover { background: #fee2e2; color: #b91c1c; }
   .mbody { padding: 18px 22px; }
   .mfoot { display: flex; gap: 8px; justify-content: flex-end; padding: 14px 22px 18px; border-top: 1.5px solid #f1f5f9; background: #f8fafc; border-radius: 0 0 16px 16px; }
+
   .fgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   .fgrid .s2 { grid-column: 1 / -1; }
   .fsec { grid-column: 1 / -1; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #94a3b8; padding: 8px 0 4px; border-bottom: 1.5px solid #f1f5f9; margin-top: 4px; }
+
+  /* ── Campos do modal ── */
   .field { display: flex; flex-direction: column; gap: 5px; }
   .field label { font-size: 11px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: #64748b; }
-  .field .ro { font-size: 13px; color: #334155; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 7px; padding: 8px 11px; line-height: 1.5; min-height: 36px; word-break: break-word; }
-  .field input, .field select, .field textarea { width: 100%; background: #fff; border: 1.5px solid #d1d9e8; color: #1e293b; padding: 8px 11px; border-radius: 7px; font-size: 13px; outline: none; font-family: inherit; transition: border-color 0.2s; }
-  .field input:focus, .field select:focus, .field textarea:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+
+  /* campo somente leitura */
+  .field .ro {
+    font-size: 13px; color: #334155; background: #f8fafc;
+    border: 1.5px solid #e2e8f0; border-radius: 7px;
+    padding: 8px 11px; line-height: 1.5; min-height: 36px; word-break: break-word;
+  }
+
+  /* todos os inputs editáveis */
+  .field input[type="text"],
+  .field input[type="date"],
+  .field select,
+  .field textarea {
+    width: 100%; background: #fff; border: 1.5px solid #d1d9e8;
+    color: #1e293b; padding: 8px 11px; border-radius: 7px;
+    font-size: 13px; outline: none; font-family: inherit;
+    transition: border-color 0.2s; min-height: 36px;
+  }
+  .field input[type="date"] { cursor: pointer; }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+  }
   .field textarea { resize: vertical; min-height: 72px; line-height: 1.5; }
 
   /* ── Toast ── */
@@ -154,35 +165,29 @@
 </head>
 <body>
 
-<!-- ══════════════════════════════════════════════════════════
-     TELA DE CONFIGURAÇÃO DO FIREBASE (aparece só na 1ª vez)
-═══════════════════════════════════════════════════════════ -->
+<!-- ══ SETUP ══════════════════════════════════════════════ -->
 <div id="setup-screen">
   <div class="setup-card">
     <h2>🔧 Conectar ao banco de dados</h2>
-    <p class="subtitle">Esta configuração é feita <strong>uma única vez por computador</strong>. O banco de dados é gratuito e ilimitado para este uso.</p>
+    <p class="sub">Esta configuração é feita <strong>uma única vez por computador</strong>. O banco é gratuito.</p>
 
     <div class="step">
-      <div class="step-num">✅ Passo 1 — Criar projeto Firebase (já feito?)</div>
+      <div class="step-num">Passo 1 — Criar projeto Firebase</div>
       <p>Acesse <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> → <strong>"Adicionar projeto"</strong> → nome: <code>cartorio-chapeco</code> → desative Google Analytics → <strong>"Criar projeto"</strong>.</p>
     </div>
-
     <div class="step">
-      <div class="step-num">✅ Passo 2 — Criar o Realtime Database</div>
-      <p>No menu lateral: <strong>"Criar" → "Realtime Database"</strong> → <strong>"Criar banco de dados"</strong> → localização: <code>us-central1</code> → selecione <strong>"Iniciar no modo de teste"</strong> → <strong>"Ativar"</strong>.</p>
+      <div class="step-num">Passo 2 — Criar Realtime Database</div>
+      <p>Menu lateral: <strong>"Criar" → "Realtime Database"</strong> → <strong>"Criar banco de dados"</strong> → localização: <code>us-central1</code> → <strong>"Iniciar no modo de teste"</strong> → <strong>"Ativar"</strong>.</p>
     </div>
-
     <div class="step">
-      <div class="step-num">📋 Passo 3 — Copiar a URL e colar abaixo</div>
-      <p>Após criar, a URL aparece no topo da página do banco. Ela termina com <code>.firebaseio.com</code>.</p>
+      <div class="step-num">Passo 3 — Copiar a URL e colar abaixo</div>
+      <p>A URL aparece no topo após criar. Termina com <code>.firebaseio.com</code>.</p>
       <p style="margin-top:6px">Exemplo: <code>https://cartorio-chapeco-default-rtdb.firebaseio.com</code></p>
       <label class="input-label">URL do Realtime Database</label>
       <input class="setup-input" id="firebaseUrl" type="text"
              placeholder="https://seu-projeto-default-rtdb.firebaseio.com"
              onkeydown="if(event.key==='Enter') setupFirebase()">
-      <div class="setup-error" id="setupError">
-        ❌ URL inválida. Deve começar com <code>https://</code> e terminar com <code>.firebaseio.com</code>
-      </div>
+      <div class="setup-error" id="setupError">❌ URL inválida. Deve começar com <code>https://</code> e conter <code>firebaseio.com</code></div>
     </div>
 
     <button class="setup-btn" onclick="setupFirebase()">✓ Conectar e abrir o painel</button>
@@ -190,17 +195,13 @@
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════════════
-     LOADING
-═══════════════════════════════════════════════════════════ -->
+<!-- ══ LOADING ════════════════════════════════════════════ -->
 <div id="loading" class="hidden">
   <div class="spin"></div>
-  <p id="loadingMsg">Conectando ao banco de dados compartilhado...</p>
+  <p id="loadingMsg">Conectando ao banco compartilhado...</p>
 </div>
 
-<!-- ══════════════════════════════════════════════════════════
-     APP PRINCIPAL
-═══════════════════════════════════════════════════════════ -->
+<!-- ══ APP ════════════════════════════════════════════════ -->
 <header>
   <div class="brand">
     <h1>📋 Painel de Documentos</h1>
@@ -214,9 +215,9 @@
       <option value="Média">Média</option>
       <option value="Normal">Normal</option>
     </select>
-    <select id="fAba" onchange="applyFilters()"><option value="">Serviço / Aba</option></select>
+    <select id="fAba"  onchange="applyFilters()"><option value="">Serviço / Aba</option></select>
     <select id="fRecv" onchange="applyFilters()"><option value="">Responsável</option></select>
-    <select id="fSit" onchange="applyFilters()">
+    <select id="fSit"  onchange="applyFilters()">
       <option value="">Todas as situações</option>
       <option value="Em andamento">Em Andamento</option>
       <option value="Nota Devolutiva">Nota Devolutiva</option>
@@ -224,9 +225,9 @@
       <option value="Concluído">Concluído</option>
       <option value="Arquivado">Arquivado</option>
     </select>
-    <button class="btn btn-ghost" onclick="resetFilters()">Limpar</button>
+    <button class="btn btn-ghost"   onclick="resetFilters()">Limpar</button>
     <button class="btn btn-primary" onclick="openAdd()">+ Novo</button>
-    <button class="btn-sm" onclick="showSetup()" title="Reconectar banco de dados">⚙</button>
+    <button class="btn-sm" onclick="showSetup()" title="Configurações do banco">⚙</button>
   </div>
 </header>
 
@@ -234,9 +235,8 @@
   <div class="sync-dot spinning" id="syncDot"></div>
   <span id="syncMsg">Conectando...</span>
 </div>
-
 <div class="stats-bar" id="statsBar"></div>
-<div class="board" id="board"></div>
+<div class="board"    id="board"></div>
 
 <!-- Modal -->
 <div class="overlay" id="overlay" onclick="onOverlayClick(event)">
@@ -254,10 +254,10 @@
 
 <script src="kanban_data.js"></script>
 <script>
-// ═══════════════════════════════════════════════════════════════════
-//  CONSTANTES
-// ═══════════════════════════════════════════════════════════════════
-const FIREBASE_KEY = 'cartorio_firebase_url_v1';
+// ═══════════════════════════════════════════════════════
+// CONSTANTES
+// ═══════════════════════════════════════════════════════
+const FIREBASE_KEY = 'cartorio_firebase_url_v2';
 const DB_PATH      = 'kanban';
 
 const COLS = [
@@ -276,18 +276,37 @@ const ABAS = [
   'RTD - Inteiro Teor','RTD - Certidão','RTD - Atas','RTD - Outros',
 ];
 
-// ═══════════════════════════════════════════════════════════════════
-//  ESTADO
-// ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+// ESTADO
+// ═══════════════════════════════════════════════════════
 let cards = [], vis = new Set(), dragId = null, editId = null, db = null;
 
-// ═══════════════════════════════════════════════════════════════════
-//  SETUP
-// ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+// UTILS DE DATA
+// Converte "2025-12-01" ↔ "01/12/2025"
+// O input[type=date] exige formato YYYY-MM-DD
+// ═══════════════════════════════════════════════════════
+function toDateInput(v) {
+  if (!v) return '';
+  v = String(v).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;           // já está certo
+  const m = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (m) return `${m[3]}-${m[2]}-${m[1]}`;               // dd/mm/yyyy → yyyy-mm-dd
+  return '';
+}
+function fromDateInput(v) {
+  if (!v) return '';
+  const m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) return `${m[3]}/${m[2]}/${m[1]}`;               // yyyy-mm-dd → dd/mm/yyyy
+  return v;
+}
+
+// ═══════════════════════════════════════════════════════
+// SETUP FIREBASE
+// ═══════════════════════════════════════════════════════
 function showSetup() {
   document.getElementById('setup-screen').classList.remove('hidden');
 }
-
 function setupFirebase() {
   const url = document.getElementById('firebaseUrl').value.trim();
   const err = document.getElementById('setupError');
@@ -299,15 +318,10 @@ function setupFirebase() {
   document.getElementById('setup-screen').classList.add('hidden');
   connectFirebase(url);
 }
-
-// ═══════════════════════════════════════════════════════════════════
-//  FIREBASE
-// ═══════════════════════════════════════════════════════════════════
 function connectFirebase(url) {
   document.getElementById('loading').classList.remove('hidden');
   setSyncStatus('loading', 'Conectando ao banco compartilhado...');
   try {
-    // Evita inicializar duas vezes
     let app;
     try { app = firebase.app(); } catch(e) { app = firebase.initializeApp({ databaseURL: url }); }
     db = firebase.database(app);
@@ -318,19 +332,16 @@ function connectFirebase(url) {
     showToast('❌ Erro de conexão. Clique em ⚙ para corrigir.');
   }
 }
-
 function listenFirebase() {
-  db.ref(DB_PATH).on('value', snapshot => {
-    const data = snapshot.val() || {};
-    buildCards(data);
+  db.ref(DB_PATH).on('value', snap => {
+    buildCards(snap.val() || {});
     document.getElementById('loading').classList.add('hidden');
     setSyncStatus('ok', '🟢 Online — alterações salvas e visíveis para todos em tempo real');
   }, err => {
     document.getElementById('loading').classList.add('hidden');
-    setSyncStatus('error', '❌ Erro de leitura: ' + err.message + ' — Recarregue a página.');
+    setSyncStatus('error', '❌ Erro de leitura: ' + err.message);
   });
 }
-
 function buildCards(data) {
   const overrides = data.overrides ? Object.values(data.overrides) : [];
   const newCards  = data.newCards  ? Object.values(data.newCards)  : [];
@@ -343,9 +354,8 @@ function buildCards(data) {
   if (document.getElementById('fAba').options.length <= 1) populateFilters();
   applyFilters();
 }
-
 async function saveItem(type, payload) {
-  if (!db) { showToast('❌ Sem conexão com o banco.'); return false; }
+  if (!db) { showToast('❌ Sem conexão.'); return false; }
   setSyncStatus('loading', '💾 Salvando...');
   try {
     const key = String(payload.id).replace(/[.#$[\]/]/g, '_');
@@ -359,33 +369,30 @@ async function saveItem(type, payload) {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-//  INICIALIZAÇÃO
-// ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
 (function init() {
   const savedUrl = localStorage.getItem(FIREBASE_KEY);
   if (savedUrl) {
     document.getElementById('setup-screen').classList.add('hidden');
     connectFirebase(savedUrl);
   }
-  // Se não há URL salva, a tela de setup já está visível (padrão do HTML)
 })();
 
-// ═══════════════════════════════════════════════════════════════════
-//  FILTROS
-// ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+// FILTROS
+// ═══════════════════════════════════════════════════════
 function populateFilters() {
   const selA = document.getElementById('fAba');
   while (selA.options.length > 1) selA.remove(1);
   [...new Set(cards.map(c => c.aba).filter(Boolean))].sort()
     .forEach(a => selA.appendChild(new Option(a, a)));
-
   const selR = document.getElementById('fRecv');
   while (selR.options.length > 1) selR.remove(1);
   [...new Set(cards.map(c => (c.recebido||'').trim()).filter(Boolean))].sort()
     .forEach(r => selR.appendChild(new Option(r, r)));
 }
-
 function applyFilters() {
   const q    = document.getElementById('searchInput').value.toLowerCase().trim();
   const prio = document.getElementById('fPrio').value;
@@ -405,15 +412,14 @@ function applyFilters() {
   }).map(c => c.id));
   renderBoard(); renderStats();
 }
-
 function resetFilters() {
   ['searchInput','fPrio','fAba','fRecv','fSit'].forEach(id => { document.getElementById(id).value = ''; });
   applyFilters();
 }
 
-// ═══════════════════════════════════════════════════════════════════
-//  RENDER
-// ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+// RENDER BOARD
+// ═══════════════════════════════════════════════════════
 function renderBoard() {
   const board = document.getElementById('board');
   board.innerHTML = '';
@@ -435,9 +441,7 @@ function renderBoard() {
     board.appendChild(d);
   });
 }
-
 function eid(s) { return s.replace(/[^a-zA-Z0-9]/g,'_'); }
-
 function renderCard(c) {
   const desc = (c.descricao||'').trim() || '(sem descrição)';
   let pzEl = '';
@@ -463,7 +467,6 @@ function renderCard(c) {
       </div>
     </div>`;
 }
-
 function renderStats() {
   const cnt = {};
   COLS.forEach(c => cnt[c.id] = 0);
@@ -476,7 +479,6 @@ function renderStats() {
        <div class="sd" style="background:#6366f1"></div>Filtrado<span class="sc" style="color:#4338ca">${vis.size}</span>
      </div>`;
 }
-
 function setSyncStatus(type, msg) {
   const bar = document.getElementById('syncBar');
   bar.className = 'sync-bar ' + type;
@@ -484,9 +486,9 @@ function setSyncStatus(type, msg) {
   document.getElementById('syncMsg').textContent = msg;
 }
 
-// ═══════════════════════════════════════════════════════════════════
-//  DRAG & DROP
-// ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+// DRAG & DROP
+// ═══════════════════════════════════════════════════════
 function dStart(e, id) {
   dragId = id; e.dataTransfer.effectAllowed = 'move';
   setTimeout(() => document.getElementById('card-'+id)?.classList.add('dragging'), 0);
@@ -499,7 +501,6 @@ function dEnd() {
 function dOver(e)  { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
 function dEnter(e) { e.currentTarget.classList.add('drag-over'); }
 function dLeave(e) { e.currentTarget.classList.remove('drag-over'); }
-
 async function dDrop(e, colId) {
   e.preventDefault(); e.currentTarget.classList.remove('drag-over');
   if (!dragId) return;
@@ -513,9 +514,9 @@ async function dDrop(e, colId) {
   dragId = null;
 }
 
-// ═══════════════════════════════════════════════════════════════════
-//  MODAL
-// ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+// MODAL
+// ═══════════════════════════════════════════════════════
 function closeModal() { document.getElementById('overlay').classList.remove('open'); editId = null; }
 function onOverlayClick(e) { if (e.target.id === 'overlay') closeModal(); }
 function showModal(title, body, foot) {
@@ -525,17 +526,23 @@ function showModal(title, body, foot) {
   document.getElementById('overlay').classList.add('open');
 }
 
-// ═══════════════════════════════════════════════════════════════════
-//  EDITAR
-// ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+// EDITAR CARTÃO
+// Todos os campos de data agora são input[type=date] editáveis
+// ═══════════════════════════════════════════════════════
 function openEdit(id) {
   const c = cards.find(x => x.id === id);
   if (!c) return;
   editId = id;
+
   showModal('Editar Documento', `
     <div class="fgrid">
+
       <div class="fsec">Identificação</div>
-      <div class="field s2"><label>Descrição / Partes</label><div class="ro">${esc(c.descricao||'—')}</div></div>
+      <div class="field s2">
+        <label>Descrição / Partes</label>
+        <div class="ro">${esc(c.descricao||'—')}</div>
+      </div>
       <div class="field"><label>Aba / Serviço</label><div class="ro">${esc(c.aba||'—')}</div></div>
       <div class="field"><label>Nº Protocolo</label><div class="ro">${esc(c.protocolo||'—')}</div></div>
       <div class="field"><label>Tipo de Ato</label><div class="ro">${esc(c.tipo||'—')}</div></div>
@@ -544,28 +551,69 @@ function openEdit(id) {
       <div class="field"><label>Motivo da Exigência (ND)</label><div class="ro">${esc(c.motivo_nd||'—')}</div></div>
 
       <div class="fsec">Atendimento</div>
-      <div class="field"><label>Recebido por</label><input id="e_recv" value="${esc(c.recebido||'')}"></div>
-      <div class="field"><label>Apresentado por</label><input id="e_apres" value="${esc(c.apresentado_por||'')}" placeholder="Nome do apresentante"></div>
-      <div class="field s2"><label>Telefone para Contato</label><input id="e_tel" value="${esc(c.telefone||'')}" placeholder="(49) 9 9999-9999"></div>
+      <div class="field">
+        <label>Recebido por</label>
+        <input type="text" id="e_recv" value="${esc(c.recebido||'')}">
+      </div>
+      <div class="field">
+        <label>Apresentado por</label>
+        <input type="text" id="e_apres" value="${esc(c.apresentado_por||'')}" placeholder="Nome do apresentante">
+      </div>
+      <div class="field s2">
+        <label>Telefone para Contato</label>
+        <input type="text" id="e_tel" value="${esc(c.telefone||'')}" placeholder="(49) 9 9999-9999">
+      </div>
 
       <div class="fsec">Situação e Prioridade</div>
-      <div class="field"><label>Situação</label>
-        <select id="e_sit">${COLS.map(col=>`<option value="${col.id}"${c.situacao===col.id?' selected':''}>${col.label}</option>`).join('')}</select>
+      <div class="field">
+        <label>Situação</label>
+        <select id="e_sit">
+          ${COLS.map(col=>`<option value="${col.id}"${c.situacao===col.id?' selected':''}>${col.label}</option>`).join('')}
+        </select>
       </div>
-      <div class="field"><label>Prioridade</label>
+      <div class="field">
+        <label>Prioridade</label>
         <select id="e_prio">
           <option value="Alta"${c.priority==='Alta'?' selected':''}>Alta</option>
           <option value="Média"${c.priority==='Média'?' selected':''}>Média</option>
           <option value="Normal"${c.priority==='Normal'?' selected':''}>Normal</option>
         </select>
       </div>
-      <div class="field s2"><label>Observações</label><textarea id="e_obs">${esc(c.observacoes||'')}</textarea></div>
+      <div class="field s2">
+        <label>Observações</label>
+        <textarea id="e_obs">${esc(c.observacoes||'')}</textarea>
+      </div>
 
-      <div class="fsec">Datas e Entregas</div>
-      <div class="field"><label>Data Conclusão</label><div class="ro">${c.data_conclusao||'—'}</div></div>
-      <div class="field"><label>Data Nota Devolutiva</label><div class="ro">${c.data_nd||'—'}</div></div>
-      <div class="field"><label>Data Retorno</label><div class="ro">${c.data_retorno||'—'}</div></div>
-      <div class="field"><label>Nome de Quem Retirou</label><div class="ro">${esc(c.nome_retirou||'—')}</div></div>
+      <div class="fsec">Datas e Entregas — todos editáveis</div>
+      <div class="field">
+        <label>Data Conclusão</label>
+        <input type="date" id="e_data_conclusao" value="${toDateInput(c.data_conclusao)}">
+      </div>
+      <div class="field">
+        <label>Data Nota Devolutiva</label>
+        <input type="date" id="e_data_nd" value="${toDateInput(c.data_nd)}">
+      </div>
+      <div class="field">
+        <label>Data Retorno</label>
+        <input type="date" id="e_data_retorno" value="${toDateInput(c.data_retorno)}">
+      </div>
+      <div class="field">
+        <label>Data Retirada</label>
+        <input type="date" id="e_data_retirada" value="${toDateInput(c.data_retirada)}">
+      </div>
+      <div class="field">
+        <label>Responsável pela Entrega</label>
+        <input type="text" id="e_resp_entrega" value="${esc(c.resp_entrega||'')}">
+      </div>
+      <div class="field">
+        <label>Nome de Quem Retirou</label>
+        <input type="text" id="e_nome_retirou" value="${esc(c.nome_retirou||'')}">
+      </div>
+      <div class="field">
+        <label>Situação do Retorno</label>
+        <input type="text" id="e_sit_retorno" value="${esc(c.situacao_retorno||'')}">
+      </div>
+
     </div>`,
     `<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
      <button class="btn btn-primary" onclick="saveEdit()">💾 Salvar para todos</button>`
@@ -575,12 +623,24 @@ function openEdit(id) {
 async function saveEdit() {
   const c = cards.find(x => x.id === editId);
   if (!c) return;
+
+  // Campos de texto
   c.recebido        = document.getElementById('e_recv').value.trim();
   c.apresentado_por = document.getElementById('e_apres').value.trim();
   c.telefone        = document.getElementById('e_tel').value.trim();
   c.situacao        = document.getElementById('e_sit').value;
   c.priority        = document.getElementById('e_prio').value;
   c.observacoes     = document.getElementById('e_obs').value.trim();
+  c.resp_entrega    = document.getElementById('e_resp_entrega').value.trim();
+  c.nome_retirou    = document.getElementById('e_nome_retirou').value.trim();
+  c.situacao_retorno= document.getElementById('e_sit_retorno').value.trim();
+
+  // Campos de data — converte do input (YYYY-MM-DD) para armazenamento (DD/MM/YYYY)
+  c.data_conclusao  = fromDateInput(document.getElementById('e_data_conclusao').value);
+  c.data_nd         = fromDateInput(document.getElementById('e_data_nd').value);
+  c.data_retorno    = fromDateInput(document.getElementById('e_data_retorno').value);
+  c.data_retirada   = fromDateInput(document.getElementById('e_data_retirada').value);
+
   closeModal();
   const isNew = c.id.startsWith('usr_');
   const ok = await saveItem(isNew ? 'newCards' : 'overrides', buildPayload(c, isNew));
@@ -588,59 +648,72 @@ async function saveEdit() {
 }
 
 function buildPayload(c, isNew) {
-  if (isNew) return { ...c }; // salva tudo para cartões criados pelo usuário
-  // Para cartões da planilha, salva apenas campos editáveis
+  if (isNew) return { ...c };
+  // Para cartões da planilha, salva apenas os campos editáveis
   return {
-    id:              c.id,
-    situacao:        c.situacao        || '',
-    priority:        c.priority        || 'Normal',
-    recebido:        c.recebido        || '',
-    apresentado_por: c.apresentado_por || '',
-    telefone:        c.telefone        || '',
-    observacoes:     c.observacoes     || '',
+    id:               c.id,
+    situacao:         c.situacao         || '',
+    priority:         c.priority         || 'Normal',
+    recebido:         c.recebido         || '',
+    apresentado_por:  c.apresentado_por  || '',
+    telefone:         c.telefone         || '',
+    observacoes:      c.observacoes      || '',
+    resp_entrega:     c.resp_entrega     || '',
+    nome_retirou:     c.nome_retirou     || '',
+    situacao_retorno: c.situacao_retorno || '',
+    data_conclusao:   c.data_conclusao   || '',
+    data_nd:          c.data_nd          || '',
+    data_retorno:     c.data_retorno     || '',
+    data_retirada:    c.data_retirada    || '',
   };
 }
 
-// ═══════════════════════════════════════════════════════════════════
-//  NOVO CARTÃO
-// ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+// NOVO CARTÃO
+// ═══════════════════════════════════════════════════════
 function openAdd(situacao) {
   editId = null;
   const def = situacao || 'Em andamento';
   showModal('Novo Documento', `
     <div class="fgrid">
       <div class="fsec">Identificação</div>
-      <div class="field s2"><label>Descrição / Partes *</label>
+      <div class="field s2">
+        <label>Descrição / Partes *</label>
         <textarea id="n_desc" placeholder="Descreva o documento ou partes envolvidas..."></textarea>
       </div>
-      <div class="field"><label>Aba / Serviço *</label>
+      <div class="field">
+        <label>Aba / Serviço *</label>
         <select id="n_aba">${ABAS.map(a=>`<option value="${a}">${a}</option>`).join('')}<option value="Outro">Outro</option></select>
       </div>
-      <div class="field"><label>Nº Protocolo</label><input id="n_prot" placeholder="Nº Protocolo"></div>
-      <div class="field"><label>Tipo de Ato</label><input id="n_tipo" placeholder="Ex: 1º Registro de Estatuto"></div>
-      <div class="field"><label>CNPJ / CPF</label><input id="n_cnpj"></div>
+      <div class="field"><label>Nº Protocolo</label><input type="text" id="n_prot" placeholder="Nº Protocolo"></div>
+      <div class="field"><label>Tipo de Ato</label><input type="text" id="n_tipo" placeholder="Ex: 1º Registro de Estatuto"></div>
+      <div class="field"><label>CNPJ / CPF</label><input type="text" id="n_cnpj"></div>
 
       <div class="fsec">Atendimento</div>
-      <div class="field"><label>Recebido por</label><input id="n_recv" placeholder="Nome do atendente"></div>
-      <div class="field"><label>Apresentado por</label><input id="n_apres" placeholder="Nome do apresentante"></div>
-      <div class="field s2"><label>Telefone para Contato</label>
-        <input id="n_tel" placeholder="(49) 9 9999-9999">
-      </div>
+      <div class="field"><label>Recebido por</label><input type="text" id="n_recv" placeholder="Nome do atendente"></div>
+      <div class="field"><label>Apresentado por</label><input type="text" id="n_apres" placeholder="Nome do apresentante"></div>
+      <div class="field s2"><label>Telefone para Contato</label><input type="text" id="n_tel" placeholder="(49) 9 9999-9999"></div>
 
       <div class="fsec">Situação</div>
-      <div class="field"><label>Situação</label>
+      <div class="field">
+        <label>Situação</label>
         <select id="n_sit">${COLS.map(col=>`<option value="${col.id}"${col.id===def?' selected':''}>${col.label}</option>`).join('')}</select>
       </div>
-      <div class="field"><label>Prioridade</label>
+      <div class="field">
+        <label>Prioridade</label>
         <select id="n_prio">
           <option value="Normal" selected>Normal</option>
           <option value="Média">Média</option>
           <option value="Alta">Alta</option>
         </select>
       </div>
-      <div class="field s2"><label>Observações</label>
-        <textarea id="n_obs" placeholder="Informações adicionais..."></textarea>
-      </div>
+      <div class="field s2"><label>Observações</label><textarea id="n_obs" placeholder="Informações adicionais..."></textarea></div>
+
+      <div class="fsec">Datas</div>
+      <div class="field"><label>Data de Entrada</label><input type="date" id="n_data_entrada" value="${new Date().toISOString().slice(0,10)}"></div>
+      <div class="field"><label>Data Conclusão</label><input type="date" id="n_data_conclusao"></div>
+      <div class="field"><label>Data Nota Devolutiva</label><input type="date" id="n_data_nd"></div>
+      <div class="field"><label>Data Retorno</label><input type="date" id="n_data_retorno"></div>
     </div>`,
     `<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
      <button class="btn btn-primary" onclick="addCard()">➕ Adicionar para todos</button>`
@@ -653,7 +726,7 @@ async function addCard() {
   const nc = {
     id:              'usr_' + Date.now(),
     protocolo:       document.getElementById('n_prot').value.trim()  || '',
-    data_entrada:    new Date().toISOString().slice(0,10),
+    data_entrada:    fromDateInput(document.getElementById('n_data_entrada').value) || new Date().toISOString().slice(0,10),
     tipo:            document.getElementById('n_tipo').value.trim(),
     descricao:       desc,
     cnpj:            document.getElementById('n_cnpj').value.trim(),
@@ -664,17 +737,20 @@ async function addCard() {
     priority:        document.getElementById('n_prio').value,
     observacoes:     document.getElementById('n_obs').value.trim(),
     aba:             document.getElementById('n_aba').value,
-    prazo: null, data_conclusao:'', resp_entrega:'', data_retirada:'',
-    nome_retirou:'', data_nd:'', motivo_nd:'', data_retorno:'', situacao_retorno:'',
+    data_conclusao:  fromDateInput(document.getElementById('n_data_conclusao').value),
+    data_nd:         fromDateInput(document.getElementById('n_data_nd').value),
+    data_retorno:    fromDateInput(document.getElementById('n_data_retorno').value),
+    prazo: null, resp_entrega:'', data_retirada:'', nome_retirou:'',
+    motivo_nd:'', situacao_retorno:'',
   };
   closeModal();
   const ok = await saveItem('newCards', nc);
   if (ok) showToast('✓ Documento adicionado e visível para todos');
 }
 
-// ═══════════════════════════════════════════════════════════════════
-//  UTILS
-// ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════
 function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -686,3 +762,4 @@ function showToast(msg) {
 </script>
 </body>
 </html>
+
