@@ -16,6 +16,7 @@ Este projeto usa Firebase Realtime Database. Nao publique regras restritivas sem
 - Botao `Backup` no painel para exportar os cartoes vistos pelo navegador.
 - Metadados `updatedAt` e `updatedBy` nas proximas gravacoes.
 - Campo `Seu nome` no painel para preencher o `updatedBy` neste computador.
+- Suporte preparado para Firebase Authentication: ao colar a config Web do Firebase no setup, o painel passa a pedir login por e-mail/senha.
 - Busca tolerante a acentos e formatos de telefone/documentos.
 - Ordenacao dos cartoes por prioridade, prazo e data de entrada.
 - Alerta antes de cadastrar um documento que parece duplicado.
