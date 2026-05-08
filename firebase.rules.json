@@ -1,0 +1,27 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "kanban": {
+      ".read": "auth != null",
+      "newCards": {
+        "$cardId": {
+          ".write": "auth != null",
+          ".validate": "newData.hasChildren(['id', 'descricao', 'situacao', 'priority', 'aba']) && newData.child('id').isString()"
+        }
+      },
+      "overrides": {
+        "$cardId": {
+          ".write": "auth != null",
+          ".validate": "newData.hasChildren(['id', 'situacao', 'priority']) && newData.child('id').isString()"
+        }
+      },
+      "audit": {
+        "$entryId": {
+          ".write": "auth != null && !data.exists()",
+          ".validate": "newData.hasChildren(['id', 'type', 'savedAt'])"
+        }
+      }
+    }
+  }
+}

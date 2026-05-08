@@ -161,6 +161,8 @@
   /* ── Toast ── */
   .toast { position: fixed; bottom: 22px; right: 22px; background: #1e293b; border-radius: 10px; padding: 11px 18px; font-size: 13px; color: #fff; z-index: 400; transform: translateY(80px); opacity: 0; transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1); max-width: 300px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
   .toast.show { transform: translateY(0); opacity: 1; }
+  .security-note { display: none; padding: 8px 22px; background: #fff7ed; border-bottom: 1px solid #fed7aa; color: #9a3412; font-size: 12px; font-weight: 600; }
+  .security-note.show { display: block; }
 </style>
 </head>
 <body>
@@ -226,11 +228,15 @@
       <option value="Arquivado">Arquivado</option>
     </select>
     <button class="btn btn-ghost"   onclick="resetFilters()">Limpar</button>
+    <button class="btn btn-ghost"   onclick="exportBackup()">Backup</button>
     <button class="btn btn-primary" onclick="openAdd()">+ Novo</button>
     <button class="btn-sm" onclick="showSetup()" title="Configurações do banco">⚙</button>
   </div>
 </header>
 
+<div class="security-note" id="securityNote">
+  Atencao: este painel esta conectado a um banco sem login no navegador. Restrinja as regras do Firebase assim que os usuarios forem cadastrados.
+</div>
 <div class="sync-bar loading" id="syncBar">
   <div class="sync-dot spinning" id="syncDot"></div>
   <span id="syncMsg">Conectando...</span>
@@ -280,6 +286,7 @@ const ABAS = [
 // ESTADO
 // ═══════════════════════════════════════════════════════
 let cards = [], vis = new Set(), dragId = null, editId = null, db = null;
+let activeDbUrl = '';
 
 // ═══════════════════════════════════════════════════════
 // UTILS DE DATA
@@ -319,6 +326,7 @@ function setupFirebase() {
   connectFirebase(url);
 }
 function connectFirebase(url) {
+  activeDbUrl = url;
   document.getElementById('loading').classList.remove('hidden');
   setSyncStatus('loading', 'Conectando ao banco compartilhado...');
   try {
@@ -336,6 +344,7 @@ function listenFirebase() {
   db.ref(DB_PATH).on('value', snap => {
     buildCards(snap.val() || {});
     document.getElementById('loading').classList.add('hidden');
+    document.getElementById('securityNote').classList.add('show');
     setSyncStatus('ok', '🟢 Online — alterações salvas e visíveis para todos em tempo real');
   }, err => {
     document.getElementById('loading').classList.add('hidden');
@@ -359,7 +368,16 @@ async function saveItem(type, payload) {
   setSyncStatus('loading', '💾 Salvando...');
   try {
     const key = String(payload.id).replace(/[.#$[\]/]/g, '_');
+    const savedAt = new Date().toISOString();
+    payload.updatedAt = savedAt;
+    payload.updatedBy = localStorage.getItem('cartorio_user_name') || '';
     await db.ref(`${DB_PATH}/${type}/${key}`).set(payload);
+    db.ref(`${DB_PATH}/audit/${Date.now()}_${key}`).set({
+      id: payload.id,
+      type,
+      savedAt,
+      updatedBy: payload.updatedBy
+    }).catch(() => {});
     setSyncStatus('ok', `✓ Salvo às ${new Date().toLocaleTimeString('pt-BR')} — visível para todos`);
     return true;
   } catch(e) {
@@ -751,6 +769,24 @@ async function addCard() {
 // ═══════════════════════════════════════════════════════
 // UTILS
 // ═══════════════════════════════════════════════════════
+function exportBackup() {
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const data = {
+    exportedAt: new Date().toISOString(),
+    databaseUrl: activeDbUrl,
+    total: cards.length,
+    cards
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `cartorio-kanban-backup-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  URL.revokeObjectURL(a.href);
+  a.remove();
+  showToast('Backup gerado neste computador.');
+}
 function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
