@@ -163,6 +163,7 @@
   .toast.show { transform: translateY(0); opacity: 1; }
   .security-note { display: none; padding: 8px 22px; background: #fff7ed; border-bottom: 1px solid #fed7aa; color: #9a3412; font-size: 12px; font-weight: 600; }
   .security-note.show { display: block; }
+  .operator-input { width: 138px; }
 </style>
 </head>
 <body>
@@ -210,6 +211,7 @@
     <p>Cartório de Registro Civil e PJ — Chapecó/SC &nbsp;·&nbsp; <span id="totalSpan">…</span> registros</p>
   </div>
   <div class="controls">
+    <input type="text" id="operatorName" class="operator-input" placeholder="Seu nome" oninput="saveOperatorName()" title="Identifica as próximas alterações neste computador">
     <input type="text" id="searchInput" placeholder="Buscar descrição, telefone, nome..." oninput="applyFilters()">
     <select id="fPrio" onchange="applyFilters()">
       <option value="">Prioridade</option>
@@ -264,6 +266,7 @@
 // CONSTANTES
 // ═══════════════════════════════════════════════════════
 const FIREBASE_KEY = 'cartorio_firebase_url_v2';
+const OPERATOR_KEY = 'cartorio_user_name';
 const DB_PATH      = 'kanban';
 
 const COLS = [
@@ -307,12 +310,44 @@ function fromDateInput(v) {
   if (m) return `${m[3]}/${m[2]}/${m[1]}`;               // yyyy-mm-dd → dd/mm/yyyy
   return v;
 }
+function todayBr() {
+  return fromDateInput(new Date().toISOString().slice(0, 10));
+}
+function parseDateValue(v) {
+  const iso = toDateInput(v);
+  return iso ? new Date(iso + 'T00:00:00').getTime() : Number.MAX_SAFE_INTEGER;
+}
+function normalizeText(v) {
+  return String(v || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+function onlyDigits(v) {
+  return String(v || '').replace(/\D/g, '');
+}
+function priorityRank(v) {
+  return v === 'Alta' ? 0 : v === 'Média' ? 1 : 2;
+}
+function compareCards(a, b) {
+  return priorityRank(a.priority) - priorityRank(b.priority)
+    || (a.prazo ?? 999999) - (b.prazo ?? 999999)
+    || parseDateValue(a.data_entrada) - parseDateValue(b.data_entrada)
+    || normalizeText(a.descricao).localeCompare(normalizeText(b.descricao), 'pt-BR');
+}
 
 // ═══════════════════════════════════════════════════════
 // SETUP FIREBASE
 // ═══════════════════════════════════════════════════════
 function showSetup() {
   document.getElementById('setup-screen').classList.remove('hidden');
+}
+function initOperatorName() {
+  document.getElementById('operatorName').value = localStorage.getItem(OPERATOR_KEY) || '';
+}
+function saveOperatorName() {
+  localStorage.setItem(OPERATOR_KEY, document.getElementById('operatorName').value.trim());
 }
 function setupFirebase() {
   const url = document.getElementById('firebaseUrl').value.trim();
@@ -370,7 +405,7 @@ async function saveItem(type, payload) {
     const key = String(payload.id).replace(/[.#$[\]/]/g, '_');
     const savedAt = new Date().toISOString();
     payload.updatedAt = savedAt;
-    payload.updatedBy = localStorage.getItem('cartorio_user_name') || '';
+    payload.updatedBy = localStorage.getItem(OPERATOR_KEY) || '';
     await db.ref(`${DB_PATH}/${type}/${key}`).set(payload);
     db.ref(`${DB_PATH}/audit/${Date.now()}_${key}`).set({
       id: payload.id,
@@ -391,6 +426,7 @@ async function saveItem(type, payload) {
 // INIT
 // ═══════════════════════════════════════════════════════
 (function init() {
+  initOperatorName();
   const savedUrl = localStorage.getItem(FIREBASE_KEY);
   if (savedUrl) {
     document.getElementById('setup-screen').classList.add('hidden');
@@ -412,7 +448,9 @@ function populateFilters() {
     .forEach(r => selR.appendChild(new Option(r, r)));
 }
 function applyFilters() {
-  const q    = document.getElementById('searchInput').value.toLowerCase().trim();
+  const rawQ = document.getElementById('searchInput').value.trim();
+  const q    = normalizeText(rawQ);
+  const qDigits = onlyDigits(rawQ);
   const prio = document.getElementById('fPrio').value;
   const aba  = document.getElementById('fAba').value;
   const recv = document.getElementById('fRecv').value;
@@ -423,8 +461,10 @@ function applyFilters() {
     if (recv && (c.recebido||'').trim() !== recv) return false;
     if (sit  && c.situacao !== sit) return false;
     if (q) {
-      const hay = [c.descricao,c.protocolo,c.aba,c.telefone,c.recebido,c.apresentado_por,c.nome_retirou].join(' ').toLowerCase();
-      if (!hay.includes(q)) return false;
+      const parts = [c.descricao,c.protocolo,c.aba,c.telefone,c.recebido,c.apresentado_por,c.nome_retirou,c.cnpj,c.observacoes];
+      const hay = normalizeText(parts.join(' '));
+      const hayDigits = onlyDigits(parts.join(' '));
+      if (!hay.includes(q) && (!qDigits || !hayDigits.includes(qDigits))) return false;
     }
     return true;
   }).map(c => c.id));
@@ -434,6 +474,16 @@ function resetFilters() {
   ['searchInput','fPrio','fAba','fRecv','fSit'].forEach(id => { document.getElementById(id).value = ''; });
   applyFilters();
 }
+function findLikelyDuplicate(candidate) {
+  const protocol = normalizeText(candidate.protocolo);
+  const phone = onlyDigits(candidate.telefone);
+  const desc = normalizeText(candidate.descricao);
+  return cards.find(c => {
+    if (protocol && normalizeText(c.protocolo) === protocol) return true;
+    if (phone && phone.length >= 8 && onlyDigits(c.telefone).endsWith(phone.slice(-8))) return true;
+    return desc && normalizeText(c.descricao) === desc;
+  });
+}
 
 // ═══════════════════════════════════════════════════════
 // RENDER BOARD
@@ -442,7 +492,7 @@ function renderBoard() {
   const board = document.getElementById('board');
   board.innerHTML = '';
   COLS.forEach(col => {
-    const cc = cards.filter(c => c.situacao === col.id && vis.has(c.id));
+    const cc = cards.filter(c => c.situacao === col.id && vis.has(c.id)).sort(compareCards);
     const d = document.createElement('div');
     d.className = 'column';
     d.innerHTML = `
@@ -744,7 +794,7 @@ async function addCard() {
   const nc = {
     id:              'usr_' + Date.now(),
     protocolo:       document.getElementById('n_prot').value.trim()  || '',
-    data_entrada:    fromDateInput(document.getElementById('n_data_entrada').value) || new Date().toISOString().slice(0,10),
+    data_entrada:    fromDateInput(document.getElementById('n_data_entrada').value) || todayBr(),
     tipo:            document.getElementById('n_tipo').value.trim(),
     descricao:       desc,
     cnpj:            document.getElementById('n_cnpj').value.trim(),
@@ -761,6 +811,8 @@ async function addCard() {
     prazo: null, resp_entrega:'', data_retirada:'', nome_retirou:'',
     motivo_nd:'', situacao_retorno:'',
   };
+  const duplicate = findLikelyDuplicate(nc);
+  if (duplicate && !confirm('Possivel documento duplicado encontrado. Deseja adicionar mesmo assim?')) return;
   closeModal();
   const ok = await saveItem('newCards', nc);
   if (ok) showToast('✓ Documento adicionado e visível para todos');
