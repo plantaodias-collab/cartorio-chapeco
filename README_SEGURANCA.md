@@ -15,6 +15,10 @@ Este projeto usa Firebase Realtime Database. Nao publique regras restritivas sem
 
 - Botao `Backup` no painel para exportar os cartoes vistos pelo navegador.
 - Metadados `updatedAt` e `updatedBy` nas proximas gravacoes.
+- Campo `Seu nome` no painel para preencher o `updatedBy` neste computador.
+- Busca tolerante a acentos e formatos de telefone/documentos.
+- Ordenacao dos cartoes por prioridade, prazo e data de entrada.
+- Alerta antes de cadastrar um documento que parece duplicado.
 - Escrita tentativa em `kanban/audit` para registrar futuras alteracoes sem bloquear o salvamento principal.
 - Regras de banco preparadas em `firebase.rules.json`, ainda nao aplicadas.
 
