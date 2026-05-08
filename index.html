@@ -259,6 +259,7 @@
     </select>
     <button class="btn btn-ghost"   onclick="resetFilters()">Limpar</button>
     <button class="btn btn-ghost"   onclick="exportBackup()">Backup</button>
+    <button class="btn btn-ghost"   onclick="exportCsv()">CSV</button>
     <button class="btn btn-primary" onclick="openAdd()">+ Novo</button>
     <button class="btn btn-ghost" id="logoutBtn" onclick="signOut()" style="display:none">Sair</button>
     <button class="btn-sm" onclick="showSetup()" title="Configurações do banco">⚙</button>
@@ -356,6 +357,15 @@ function normalizeText(v) {
 }
 function onlyDigits(v) {
   return String(v || '').replace(/\D/g, '');
+}
+function daysOpen(c) {
+  if (['Concluído','Arquivado'].includes(c.situacao)) return 0;
+  const start = parseDateValue(c.data_entrada);
+  if (start === Number.MAX_SAFE_INTEGER) return 0;
+  return Math.max(0, Math.floor((Date.now() - start) / 86400000));
+}
+function needsAttention(c) {
+  return !['Concluído','Arquivado'].includes(c.situacao) && (c.priority === 'Alta' || daysOpen(c) >= 30 || (c.prazo != null && c.prazo <= 30));
 }
 function priorityRank(v) {
   return v === 'Alta' ? 0 : v === 'Média' ? 1 : 2;
@@ -560,6 +570,17 @@ function resetFilters() {
   ['searchInput','fPrio','fAba','fRecv','fSit'].forEach(id => { document.getElementById(id).value = ''; });
   applyFilters();
 }
+function quickFilter(kind) {
+  resetFilters();
+  if (kind === 'attention') {
+    vis = new Set(cards.filter(needsAttention).map(c => c.id));
+  } else if (kind === 'nd') {
+    vis = new Set(cards.filter(c => ['Nota Devolutiva','Aguard. Retorno ND'].includes(c.situacao)).map(c => c.id));
+  } else if (kind === 'open') {
+    vis = new Set(cards.filter(c => !['Concluído','Arquivado'].includes(c.situacao)).map(c => c.id));
+  }
+  renderBoard(); renderStats();
+}
 function findLikelyDuplicate(candidate) {
   const protocol = normalizeText(candidate.protocolo);
   const phone = onlyDigits(candidate.telefone);
@@ -624,11 +645,24 @@ function renderCard(c) {
 function renderStats() {
   const cnt = {};
   COLS.forEach(c => cnt[c.id] = 0);
-  cards.filter(c => vis.has(c.id)).forEach(c => { if (c.situacao in cnt) cnt[c.situacao]++; });
+  const visibleCards = cards.filter(c => vis.has(c.id));
+  visibleCards.forEach(c => { if (c.situacao in cnt) cnt[c.situacao]++; });
+  const attention = visibleCards.filter(needsAttention).length;
+  const open = visibleCards.filter(c => !['Concluído','Arquivado'].includes(c.situacao)).length;
+  const nd = visibleCards.filter(c => ['Nota Devolutiva','Aguard. Retorno ND'].includes(c.situacao)).length;
   document.getElementById('statsBar').innerHTML =
     COLS.map(col => `<div class="stat-pill">
       <div class="sd" style="background:${col.color}"></div>${col.label}<span class="sc">${cnt[col.id]}</span>
     </div>`).join('') +
+    `<button type="button" class="stat-pill" onclick="quickFilter('attention')" title="Filtrar prioridades e prazos críticos" style="cursor:pointer;border-color:#fecaca;background:#fff1f2;color:#991b1b">
+       <div class="sd" style="background:#ef4444"></div>Atenção<span class="sc" style="color:#991b1b">${attention}</span>
+     </button>
+     <button type="button" class="stat-pill" onclick="quickFilter('open')" title="Filtrar documentos ainda abertos" style="cursor:pointer;border-color:#bfdbfe;background:#eff6ff;color:#1d4ed8">
+       <div class="sd" style="background:#2563eb"></div>Abertos<span class="sc" style="color:#1d4ed8">${open}</span>
+     </button>
+     <button type="button" class="stat-pill" onclick="quickFilter('nd')" title="Filtrar notas devolutivas e retornos" style="cursor:pointer;border-color:#fed7aa;background:#fff7ed;color:#9a3412">
+       <div class="sd" style="background:#f59e0b"></div>ND/Retorno<span class="sc" style="color:#9a3412">${nd}</span>
+     </button>` +
     `<div class="stat-pill" style="margin-left:auto;background:#eff6ff;border-color:#bfdbfe">
        <div class="sd" style="background:#6366f1"></div>Filtrado<span class="sc" style="color:#4338ca">${vis.size}</span>
      </div>`;
@@ -924,6 +958,35 @@ function exportBackup() {
   URL.revokeObjectURL(a.href);
   a.remove();
   showToast('Backup gerado neste computador.');
+}
+function csvCell(v) {
+  return `"${String(v ?? '').replace(/"/g, '""')}"`;
+}
+function exportCsv() {
+  const fields = [
+    ['situacao','Situação'], ['priority','Prioridade'], ['aba','Serviço'],
+    ['data_entrada','Entrada'], ['prazo','Prazo'], ['protocolo','Protocolo'],
+    ['descricao','Descrição'], ['recebido','Recebido por'], ['apresentado_por','Apresentado por'],
+    ['telefone','Telefone'], ['cnpj','CPF/CNPJ'], ['observacoes','Observações'],
+    ['data_conclusao','Conclusão'], ['data_nd','Nota devolutiva'], ['data_retorno','Retorno'],
+    ['data_retirada','Retirada'], ['nome_retirou','Quem retirou']
+  ];
+  const selected = cards.filter(c => vis.has(c.id)).sort((a,b) =>
+    String(a.situacao || '').localeCompare(String(b.situacao || ''), 'pt-BR') || compareCards(a,b)
+  );
+  const rows = [
+    fields.map(([, label]) => csvCell(label)).join(';'),
+    ...selected.map(c => fields.map(([key]) => csvCell(c[key])).join(';'))
+  ];
+  const blob = new Blob(['\ufeff' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `cartorio-kanban-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  URL.revokeObjectURL(a.href);
+  a.remove();
+  showToast(`${selected.length} documentos exportados em CSV.`);
 }
 function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
