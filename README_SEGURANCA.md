@@ -23,7 +23,9 @@ Este projeto usa Firebase Realtime Database. Nao publique regras restritivas sem
 - Filtros rapidos de atencao, documentos abertos e notas devolutivas/retornos.
 - Exportacao CSV dos documentos filtrados para abrir no Excel.
 - Historico recente no modal de cada documento, baseado em `kanban/audit`.
-- Confirmacao ao arquivar documentos sem data de retirada, quem retirou ou responsavel pela entrega.
+- Arquivamento exige data de retirada, quem retirou e responsavel pela entrega.
+- Navegacao rapida entre colunas, botoes principais fixos no mobile e layout ajustado para telas pequenas.
+- Tela de relatorio com documentos por responsavel, tempo medio em aberto, concluidos no mes e documentos parados.
 - Escrita tentativa em `kanban/audit` para registrar futuras alteracoes sem bloquear o salvamento principal.
 - Regras de banco preparadas em `firebase.rules.json`, ainda nao aplicadas.
 

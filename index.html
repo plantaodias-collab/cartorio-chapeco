@@ -53,6 +53,7 @@
   .brand h1 { font-size: 17px; font-weight: 700; color: #fff; }
   .brand p  { font-size: 12px; color: #93c5fd; margin-top: 2px; }
   .controls { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
+  .primary-actions { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
   select, input[type="text"] { background: #fff; border: 1.5px solid #cbd5e1; color: #1e293b; padding: 6px 11px; border-radius: 7px; font-size: 13px; outline: none; height: 34px; transition: border-color 0.2s; }
   select:focus, input[type="text"]:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
   #searchInput { width: 220px; }
@@ -174,6 +175,24 @@
   .security-note { display: none; padding: 8px 22px; background: #fff7ed; border-bottom: 1px solid #fed7aa; color: #9a3412; font-size: 12px; font-weight: 600; }
   .security-note.show { display: block; }
   .operator-input { width: 138px; }
+  @media (max-width: 760px) {
+    body { font-size: 13px; }
+    header { padding: 10px; align-items: stretch; }
+    .brand { width: 100%; }
+    .brand h1 { font-size: 15px; }
+    .brand p { font-size: 11px; }
+    .controls { width: 100%; gap: 6px; }
+    .controls input, .controls select { flex: 1 1 150px; min-width: 0; }
+    #searchInput { width: auto; flex-basis: 100%; }
+    .primary-actions { position: sticky; bottom: 0; z-index: 150; width: 100%; background: #1e3a5f; padding-top: 6px; }
+    .primary-actions .btn { flex: 1 1 auto; padding: 0 10px; }
+    .stats-bar { padding: 8px 10px; }
+    .board { padding: 12px 10px 90px; gap: 10px; scroll-snap-type: x mandatory; min-height: calc(100vh - 250px); }
+    .column { width: calc(100vw - 32px); min-width: calc(100vw - 32px); max-height: calc(100vh - 285px); scroll-snap-align: start; }
+    .modal { max-height: 94vh; }
+    .fgrid { grid-template-columns: 1fr; }
+    .fgrid .s2 { grid-column: auto; }
+  }
 </style>
 </head>
 <body>
@@ -257,12 +276,16 @@
       <option value="Concluído">Concluído</option>
       <option value="Arquivado">Arquivado</option>
     </select>
-    <button class="btn btn-ghost"   onclick="resetFilters()">Limpar</button>
-    <button class="btn btn-ghost"   onclick="exportBackup()">Backup</button>
-    <button class="btn btn-ghost"   onclick="exportCsv()">CSV</button>
-    <button class="btn btn-primary" onclick="openAdd()">+ Novo</button>
-    <button class="btn btn-ghost" id="logoutBtn" onclick="signOut()" style="display:none">Sair</button>
-    <button class="btn-sm" onclick="showSetup()" title="Configurações do banco">⚙</button>
+    <select id="colJump" onchange="jumpColumn(this.value)"><option value="">Ir para coluna</option></select>
+    <div class="primary-actions">
+      <button class="btn btn-ghost"   onclick="resetFilters()">Limpar</button>
+      <button class="btn btn-ghost"   onclick="showReport()">Relatório</button>
+      <button class="btn btn-ghost"   onclick="exportBackup()">Backup</button>
+      <button class="btn btn-ghost"   onclick="exportCsv()">CSV</button>
+      <button class="btn btn-primary" onclick="openAdd()">+ Novo</button>
+      <button class="btn btn-ghost" id="logoutBtn" onclick="signOut()" style="display:none">Sair</button>
+      <button class="btn-sm" onclick="showSetup()" title="Configurações do banco">⚙</button>
+    </div>
   </div>
 </header>
 
@@ -565,6 +588,9 @@ function populateFilters() {
   while (selR.options.length > 1) selR.remove(1);
   [...new Set(cards.map(c => (c.recebido||'').trim()).filter(Boolean))].sort()
     .forEach(r => selR.appendChild(new Option(r, r)));
+  const jump = document.getElementById('colJump');
+  while (jump.options.length > 1) jump.remove(1);
+  COLS.forEach(c => jump.appendChild(new Option(c.label, c.id)));
 }
 function applyFilters() {
   const rawQ = document.getElementById('searchInput').value.trim();
@@ -590,8 +616,13 @@ function applyFilters() {
   renderBoard(); renderStats();
 }
 function resetFilters() {
-  ['searchInput','fPrio','fAba','fRecv','fSit'].forEach(id => { document.getElementById(id).value = ''; });
+  ['searchInput','fPrio','fAba','fRecv','fSit','colJump'].forEach(id => { document.getElementById(id).value = ''; });
   applyFilters();
+}
+function jumpColumn(id) {
+  if (!id) return;
+  const el = document.getElementById('cb-' + eid(id))?.closest('.column');
+  if (el) el.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
 }
 function quickFilter(kind) {
   resetFilters();
@@ -718,7 +749,9 @@ async function dDrop(e, colId) {
   const c = cards.find(x => x.id === dragId);
   if (c && c.situacao !== colId) {
     const before = cloneCard(c);
-    if (colId === 'Arquivado' && requiresArchiveDetails({ ...c, situacao: colId }) && !confirm('Este documento ainda nao tem data de retirada, quem retirou ou responsavel pela entrega. Arquivar mesmo assim?')) {
+    if (colId === 'Arquivado' && requiresArchiveDetails({ ...c, situacao: colId })) {
+      showToast('Preencha data retirada, quem retirou e responsavel entrega antes de arquivar.');
+      openEdit(c.id);
       dragId = null;
       return;
     }
@@ -860,7 +893,10 @@ async function saveEdit() {
   c.data_retorno    = fromDateInput(document.getElementById('e_data_retorno').value);
   c.data_retirada   = fromDateInput(document.getElementById('e_data_retirada').value);
 
-  if (requiresArchiveDetails(c) && !confirm('Arquivar sem data de retirada, quem retirou ou responsavel pela entrega?')) return;
+  if (requiresArchiveDetails(c)) {
+    showToast('Para arquivar, informe data retirada, quem retirou e responsavel entrega.');
+    return;
+  }
   const before = editOriginal;
   closeModal();
   const isNew = c.id.startsWith('usr_');
@@ -1008,6 +1044,43 @@ function renderHistory(id) {
       return `<div style="margin-bottom:10px"><strong>${esc(when)}${who}</strong><br>${changes}</div>`;
     }).join('')
   }</div></div>`;
+}
+function monthKey(v) {
+  const iso = toDateInput(v);
+  return iso ? iso.slice(0, 7) : '';
+}
+function showReport() {
+  const openCards = cards.filter(c => !['Concluído','Arquivado'].includes(c.situacao));
+  const avgOpen = openCards.length ? Math.round(openCards.reduce((sum, c) => sum + daysOpen(c), 0) / openCards.length) : 0;
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const concludedMonth = cards.filter(c => monthKey(c.data_conclusao) === currentMonth).length;
+  const byOwner = new Map();
+  cards.forEach(c => {
+    const owner = (c.recebido || 'Sem responsável').trim() || 'Sem responsável';
+    byOwner.set(owner, (byOwner.get(owner) || 0) + 1);
+  });
+  const ownerRows = [...byOwner.entries()]
+    .sort((a,b) => b[1] - a[1] || a[0].localeCompare(b[0], 'pt-BR'))
+    .slice(0, 12)
+    .map(([name, total]) => `<tr><td>${esc(name)}</td><td style="text-align:right">${total}</td></tr>`).join('');
+  const staleRows = openCards
+    .map(c => ({ ...c, openDays: daysOpen(c) }))
+    .filter(c => c.openDays >= 30)
+    .sort((a,b) => b.openDays - a.openDays)
+    .slice(0, 20)
+    .map(c => `<tr><td>${c.openDays}d</td><td>${esc(c.situacao)}</td><td>${esc(c.recebido || '')}</td><td>${esc((c.descricao || '').slice(0, 90))}</td></tr>`)
+    .join('');
+  showModal('Relatório', `
+    <div class="fgrid">
+      <div class="field"><label>Documentos abertos</label><div class="ro">${openCards.length}</div></div>
+      <div class="field"><label>Tempo médio em aberto</label><div class="ro">${avgOpen} dias</div></div>
+      <div class="field"><label>Concluídos no mês</label><div class="ro">${concludedMonth}</div></div>
+      <div class="field"><label>Total no painel</label><div class="ro">${cards.length}</div></div>
+      <div class="field s2"><label>Por responsável</label><div class="ro"><table style="width:100%;border-collapse:collapse">${ownerRows || '<tr><td>Nenhum dado</td></tr>'}</table></div></div>
+      <div class="field s2"><label>Parados há 30+ dias</label><div class="ro"><table style="width:100%;border-collapse:collapse">${staleRows || '<tr><td>Nenhum documento parado há 30+ dias.</td></tr>'}</table></div></div>
+    </div>`,
+    `<button class="btn btn-primary" onclick="closeModal()">Fechar</button>`
+  );
 }
 function csvCell(v) {
   return `"${String(v ?? '').replace(/"/g, '""')}"`;
