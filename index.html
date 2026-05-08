@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cartório Chapecó — Painel de Documentos</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -24,6 +25,7 @@
   .step code { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 4px; padding: 1px 6px; font-size: 12px; font-family: monospace; color: #1d4ed8; }
   .input-label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-top: 10px; margin-bottom: 5px; }
   .setup-input { width: 100%; border: 1.5px solid #d1d9e8; border-radius: 8px; padding: 10px 13px; font-size: 13px; font-family: monospace; outline: none; color: #1e293b; transition: border-color 0.2s; }
+  textarea.setup-input { min-height: 84px; resize: vertical; }
   .setup-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
   .setup-btn { width: 100%; margin-top: 18px; padding: 13px; background: #2563eb; color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; transition: background 0.15s; }
   .setup-btn:hover { background: #1d4ed8; }
@@ -37,6 +39,14 @@
   .spin { width: 42px; height: 42px; border: 4px solid #dbeafe; border-top-color: #2563eb; border-radius: 50%; animation: rot 0.8s linear infinite; }
   @keyframes rot { to { transform: rotate(360deg); } }
   #loading p { font-size: 14px; color: #64748b; }
+  #login-screen { position: fixed; inset: 0; background: #f0f2f7; display: none; align-items: center; justify-content: center; z-index: 800; padding: 20px; }
+  #login-screen.open { display: flex; }
+  .login-card { width: 420px; max-width: 100%; background: #fff; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 28px; box-shadow: 0 8px 40px rgba(0,0,0,0.12); }
+  .login-card h2 { font-size: 18px; color: #1e293b; margin-bottom: 6px; }
+  .login-card p { font-size: 13px; color: #64748b; line-height: 1.5; margin-bottom: 16px; }
+  .login-input { width: 100%; border: 1.5px solid #d1d9e8; border-radius: 8px; padding: 10px 13px; font-size: 14px; outline: none; color: #1e293b; margin-bottom: 10px; }
+  .login-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+  .login-error { display: none; color: #b91c1c; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 6px; padding: 8px 10px; font-size: 12px; margin-bottom: 10px; }
 
   /* ── Header ── */
   header { background: #1e3a5f; padding: 13px 22px; display: flex; align-items: center; justify-content: space-between; gap: 12px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.2); flex-wrap: wrap; }
@@ -194,7 +204,25 @@
     </div>
 
     <button class="setup-btn" onclick="setupFirebase()">✓ Conectar e abrir o painel</button>
+    <div class="step">
+      <div class="step-num">Opcional - Ativar login</div>
+      <p>Cole aqui a configuracao do app Web do Firebase para habilitar login por e-mail e senha. Se ficar vazio, o painel continua abrindo como hoje.</p>
+      <label class="input-label">Config Firebase Auth em JSON</label>
+      <textarea class="setup-input" id="firebaseAuthConfig" placeholder='{"apiKey":"...","authDomain":"cartorio-chapeco.firebaseapp.com","projectId":"cartorio-chapeco"}'></textarea>
+    </div>
     <span class="reset-link" onclick="showSetup()">Trocar URL do banco de dados</span>
+  </div>
+</div>
+
+<div id="login-screen">
+  <div class="login-card">
+    <h2>Entrar no painel</h2>
+    <p>Use o e-mail cadastrado no Firebase Authentication para acessar os documentos.</p>
+    <input class="login-input" id="loginEmail" type="email" placeholder="email@cartorio.com" autocomplete="username">
+    <input class="login-input" id="loginPassword" type="password" placeholder="Senha" autocomplete="current-password" onkeydown="if(event.key==='Enter') signIn()">
+    <div class="login-error" id="loginError"></div>
+    <button class="setup-btn" onclick="signIn()">Entrar</button>
+    <span class="reset-link" onclick="showSetup()">Configurar banco/autenticacao</span>
   </div>
 </div>
 
@@ -232,6 +260,7 @@
     <button class="btn btn-ghost"   onclick="resetFilters()">Limpar</button>
     <button class="btn btn-ghost"   onclick="exportBackup()">Backup</button>
     <button class="btn btn-primary" onclick="openAdd()">+ Novo</button>
+    <button class="btn btn-ghost" id="logoutBtn" onclick="signOut()" style="display:none">Sair</button>
     <button class="btn-sm" onclick="showSetup()" title="Configurações do banco">⚙</button>
   </div>
 </header>
@@ -266,6 +295,7 @@
 // CONSTANTES
 // ═══════════════════════════════════════════════════════
 const FIREBASE_KEY = 'cartorio_firebase_url_v2';
+const AUTH_CONFIG_KEY = 'cartorio_auth_config_v1';
 const OPERATOR_KEY = 'cartorio_user_name';
 const DB_PATH      = 'kanban';
 
@@ -289,7 +319,7 @@ const ABAS = [
 // ESTADO
 // ═══════════════════════════════════════════════════════
 let cards = [], vis = new Set(), dragId = null, editId = null, db = null;
-let activeDbUrl = '';
+let activeDbUrl = '', auth = null, currentUser = null, firebaseApp = null;
 
 // ═══════════════════════════════════════════════════════
 // UTILS DE DATA
@@ -341,6 +371,8 @@ function compareCards(a, b) {
 // SETUP FIREBASE
 // ═══════════════════════════════════════════════════════
 function showSetup() {
+  document.getElementById('firebaseUrl').value = localStorage.getItem(FIREBASE_KEY) || '';
+  document.getElementById('firebaseAuthConfig').value = localStorage.getItem(AUTH_CONFIG_KEY) || '';
   document.getElementById('setup-screen').classList.remove('hidden');
 }
 function initOperatorName() {
@@ -351,35 +383,87 @@ function saveOperatorName() {
 }
 function setupFirebase() {
   const url = document.getElementById('firebaseUrl').value.trim();
+  const authConfig = document.getElementById('firebaseAuthConfig').value.trim();
   const err = document.getElementById('setupError');
   if (!url.startsWith('https://') || !url.includes('firebaseio.com')) {
     err.style.display = 'block'; return;
   }
+  if (authConfig && !parseAuthConfig(authConfig)) {
+    err.textContent = 'Config Firebase Auth invalida. Cole um JSON com apiKey, authDomain e projectId.';
+    err.style.display = 'block'; return;
+  }
   err.style.display = 'none';
   localStorage.setItem(FIREBASE_KEY, url);
+  if (authConfig) localStorage.setItem(AUTH_CONFIG_KEY, authConfig);
+  else localStorage.removeItem(AUTH_CONFIG_KEY);
   document.getElementById('setup-screen').classList.add('hidden');
   connectFirebase(url);
+}
+function parseAuthConfig(raw) {
+  if (!raw) return null;
+  try {
+    const cfg = JSON.parse(raw);
+    return cfg && cfg.apiKey && cfg.authDomain && cfg.projectId ? cfg : null;
+  } catch(e) {
+    return null;
+  }
 }
 function connectFirebase(url) {
   activeDbUrl = url;
   document.getElementById('loading').classList.remove('hidden');
   setSyncStatus('loading', 'Conectando ao banco compartilhado...');
   try {
-    let app;
-    try { app = firebase.app(); } catch(e) { app = firebase.initializeApp({ databaseURL: url }); }
-    db = firebase.database(app);
-    listenFirebase();
+    const authConfig = parseAuthConfig(localStorage.getItem(AUTH_CONFIG_KEY) || '');
+    const config = { ...(authConfig || {}), databaseURL: url };
+    try { firebaseApp = firebase.app(); } catch(e) { firebaseApp = firebase.initializeApp(config); }
+    db = firebase.database(firebaseApp);
+    if (authConfig) {
+      auth = firebase.auth(firebaseApp);
+      auth.onAuthStateChanged(user => {
+        currentUser = user;
+        document.getElementById('loading').classList.add('hidden');
+        if (user) {
+          document.getElementById('login-screen').classList.remove('open');
+          document.getElementById('operatorName').value = user.email || localStorage.getItem(OPERATOR_KEY) || '';
+          listenFirebase();
+        } else {
+          document.getElementById('login-screen').classList.add('open');
+          setSyncStatus('loading', 'Aguardando login...');
+        }
+      });
+    } else {
+      listenFirebase();
+    }
   } catch(e) {
     document.getElementById('loading').classList.add('hidden');
     setSyncStatus('error', '❌ Erro ao conectar: ' + e.message);
     showToast('❌ Erro de conexão. Clique em ⚙ para corrigir.');
   }
 }
+async function signIn() {
+  if (!auth) return;
+  const err = document.getElementById('loginError');
+  err.style.display = 'none';
+  try {
+    await auth.signInWithEmailAndPassword(
+      document.getElementById('loginEmail').value.trim(),
+      document.getElementById('loginPassword').value
+    );
+  } catch(e) {
+    err.textContent = 'Nao foi possivel entrar. Verifique e-mail e senha.';
+    err.style.display = 'block';
+  }
+}
+function signOut() {
+  if (auth) auth.signOut();
+}
 function listenFirebase() {
+  db.ref(DB_PATH).off('value');
   db.ref(DB_PATH).on('value', snap => {
     buildCards(snap.val() || {});
     document.getElementById('loading').classList.add('hidden');
     document.getElementById('securityNote').classList.add('show');
+    document.getElementById('logoutBtn').style.display = auth ? '' : 'none';
     setSyncStatus('ok', '🟢 Online — alterações salvas e visíveis para todos em tempo real');
   }, err => {
     document.getElementById('loading').classList.add('hidden');
@@ -405,7 +489,7 @@ async function saveItem(type, payload) {
     const key = String(payload.id).replace(/[.#$[\]/]/g, '_');
     const savedAt = new Date().toISOString();
     payload.updatedAt = savedAt;
-    payload.updatedBy = localStorage.getItem(OPERATOR_KEY) || '';
+    payload.updatedBy = currentUser?.email || localStorage.getItem(OPERATOR_KEY) || '';
     await db.ref(`${DB_PATH}/${type}/${key}`).set(payload);
     db.ref(`${DB_PATH}/audit/${Date.now()}_${key}`).set({
       id: payload.id,
@@ -428,6 +512,8 @@ async function saveItem(type, payload) {
 (function init() {
   initOperatorName();
   const savedUrl = localStorage.getItem(FIREBASE_KEY);
+  document.getElementById('firebaseUrl').value = savedUrl || '';
+  document.getElementById('firebaseAuthConfig').value = localStorage.getItem(AUTH_CONFIG_KEY) || '';
   if (savedUrl) {
     document.getElementById('setup-screen').classList.add('hidden');
     connectFirebase(savedUrl);
