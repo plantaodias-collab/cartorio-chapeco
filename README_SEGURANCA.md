@@ -23,6 +23,23 @@ Este projeto usa Firebase Realtime Database. Nao publique regras restritivas sem
 - Escrita tentativa em `kanban/audit` para registrar futuras alteracoes sem bloquear o salvamento principal.
 - Regras de banco preparadas em `firebase.rules.json`, ainda nao aplicadas.
 
+## Importar usuarios do Chat Interno
+
+Depois de ativar `Authentication > Sign-in method > Email/Password` no Firebase Console, copie a `apiKey` da configuracao Web do app Firebase e rode:
+
+```powershell
+$env:FIREBASE_API_KEY = "cole-a-apiKey-aqui"
+node scripts/import-auth-users.js
+```
+
+Por padrao o script le `C:/ChatInterno/data/usuarios.json`, importa somente usuarios ativos e nao imprime senhas no terminal. Se o arquivo estiver em outro local:
+
+```powershell
+$env:CHAT_INTERNO_USERS = "C:/caminho/usuarios.json"
+$env:FIREBASE_API_KEY = "cole-a-apiKey-aqui"
+node scripts/import-auth-users.js
+```
+
 ## Importante
 
 O arquivo `kanban_data.js` contem dados migrados e tambem precisa ser revisado se o repositorio continuar publico. Mesmo com Firebase fechado, qualquer dado sensivel que esteja no JavaScript publicado continua visivel para quem acessar o site.
