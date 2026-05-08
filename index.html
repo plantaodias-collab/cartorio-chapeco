@@ -408,6 +408,7 @@ function diffCards(before, after) {
   const labels = {
     situacao: 'Situação', priority: 'Prioridade', recebido: 'Recebido por',
     apresentado_por: 'Apresentado por', telefone: 'Telefone', observacoes: 'Observações',
+    pago: 'Pago', forma_pagamento: 'Forma de pagamento', registro_primitivo: 'Registro primitivo',
     resp_entrega: 'Responsável entrega', nome_retirou: 'Quem retirou',
     situacao_retorno: 'Situação retorno', data_conclusao: 'Data conclusão',
     data_nd: 'Data ND', data_retorno: 'Data retorno', data_retirada: 'Data retirada'
@@ -606,7 +607,7 @@ function applyFilters() {
     if (recv && (c.recebido||'').trim() !== recv) return false;
     if (sit  && c.situacao !== sit) return false;
     if (q) {
-      const parts = [c.descricao,c.protocolo,c.aba,c.telefone,c.recebido,c.apresentado_por,c.nome_retirou,c.cnpj,c.observacoes];
+      const parts = [c.descricao,c.protocolo,c.aba,c.telefone,c.recebido,c.apresentado_por,c.nome_retirou,c.cnpj,c.observacoes,c.pago,c.forma_pagamento,c.registro_primitivo];
       const hay = normalizeText(parts.join(' '));
       const hayDigits = onlyDigits(parts.join(' '));
       if (!hay.includes(q) && (!qDigits || !hayDigits.includes(qDigits))) return false;
@@ -798,7 +799,22 @@ function openEdit(id) {
       <div class="field"><label>Tipo de Ato</label><div class="ro">${esc(c.tipo||'—')}</div></div>
       <div class="field"><label>Data de Entrada</label><div class="ro">${c.data_entrada||'—'}</div></div>
       <div class="field"><label>CNPJ / CPF</label><div class="ro">${esc(c.cnpj||'—')}</div></div>
-      <div class="field"><label>Motivo da Exigência (ND)</label><div class="ro">${esc(c.motivo_nd||'—')}</div></div>
+      <div class="field"><label>Número do Registro Primitivo</label><input type="text" id="e_registro_primitivo" value="${esc(c.registro_primitivo||'')}" placeholder="Registro constante no sistema"></div>
+
+      <div class="fsec">Pagamento</div>
+      <div class="field">
+        <label>Pago?</label>
+        <select id="e_pago">
+          <option value=""${!c.pago?' selected':''}>Não informado</option>
+          <option value="Sim"${c.pago==='Sim'?' selected':''}>Sim</option>
+          <option value="Não"${c.pago==='Não'?' selected':''}>Não</option>
+          <option value="Isento"${c.pago==='Isento'?' selected':''}>Isento</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Forma de Pagamento</label>
+        <input type="text" id="e_forma_pagamento" value="${esc(c.forma_pagamento||'')}" placeholder="Pix, dinheiro, cartão...">
+      </div>
 
       <div class="fsec">Atendimento</div>
       <div class="field">
@@ -882,6 +898,9 @@ async function saveEdit() {
   c.telefone        = document.getElementById('e_tel').value.trim();
   c.situacao        = document.getElementById('e_sit').value;
   c.priority        = document.getElementById('e_prio').value;
+  c.registro_primitivo = document.getElementById('e_registro_primitivo').value.trim();
+  c.pago            = document.getElementById('e_pago').value;
+  c.forma_pagamento = document.getElementById('e_forma_pagamento').value.trim();
   c.observacoes     = document.getElementById('e_obs').value.trim();
   c.resp_entrega    = document.getElementById('e_resp_entrega').value.trim();
   c.nome_retirou    = document.getElementById('e_nome_retirou').value.trim();
@@ -914,6 +933,9 @@ function buildPayload(c, isNew) {
     recebido:         c.recebido         || '',
     apresentado_por:  c.apresentado_por  || '',
     telefone:         c.telefone         || '',
+    pago:             c.pago             || '',
+    forma_pagamento:  c.forma_pagamento  || '',
+    registro_primitivo: c.registro_primitivo || '',
     observacoes:      c.observacoes      || '',
     resp_entrega:     c.resp_entrega     || '',
     nome_retirou:     c.nome_retirou     || '',
@@ -945,11 +967,24 @@ function openAdd(situacao) {
       <div class="field"><label>Nº Protocolo</label><input type="text" id="n_prot" placeholder="Nº Protocolo"></div>
       <div class="field"><label>Tipo de Ato</label><input type="text" id="n_tipo" placeholder="Ex: 1º Registro de Estatuto"></div>
       <div class="field"><label>CNPJ / CPF</label><input type="text" id="n_cnpj"></div>
+      <div class="field"><label>Número do Registro Primitivo</label><input type="text" id="n_registro_primitivo" placeholder="Registro constante no sistema"></div>
 
       <div class="fsec">Atendimento</div>
       <div class="field"><label>Recebido por</label><input type="text" id="n_recv" placeholder="Nome do atendente"></div>
       <div class="field"><label>Apresentado por</label><input type="text" id="n_apres" placeholder="Nome do apresentante"></div>
       <div class="field s2"><label>Telefone para Contato</label><input type="text" id="n_tel" placeholder="(49) 9 9999-9999"></div>
+
+      <div class="fsec">Pagamento</div>
+      <div class="field">
+        <label>Pago?</label>
+        <select id="n_pago">
+          <option value="" selected>Não informado</option>
+          <option value="Sim">Sim</option>
+          <option value="Não">Não</option>
+          <option value="Isento">Isento</option>
+        </select>
+      </div>
+      <div class="field"><label>Forma de Pagamento</label><input type="text" id="n_forma_pagamento" placeholder="Pix, dinheiro, cartão..."></div>
 
       <div class="fsec">Situação</div>
       <div class="field">
@@ -987,11 +1022,14 @@ async function addCard() {
     tipo:            document.getElementById('n_tipo').value.trim(),
     descricao:       desc,
     cnpj:            document.getElementById('n_cnpj').value.trim(),
+    registro_primitivo: document.getElementById('n_registro_primitivo').value.trim(),
     recebido:        document.getElementById('n_recv').value.trim(),
     apresentado_por: document.getElementById('n_apres').value.trim(),
     telefone:        document.getElementById('n_tel').value.trim(),
     situacao:        document.getElementById('n_sit').value,
     priority:        document.getElementById('n_prio').value,
+    pago:            document.getElementById('n_pago').value,
+    forma_pagamento: document.getElementById('n_forma_pagamento').value.trim(),
     observacoes:     document.getElementById('n_obs').value.trim(),
     aba:             document.getElementById('n_aba').value,
     data_conclusao:  fromDateInput(document.getElementById('n_data_conclusao').value),
