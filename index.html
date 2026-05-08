@@ -52,7 +52,7 @@
   header { background: #183454; padding: 14px 22px 13px; display: grid; grid-template-columns: minmax(250px, auto) 1fr; align-items: end; gap: 14px 18px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(15,23,42,0.22); }
   .brand h1 { font-size: 17px; font-weight: 700; color: #fff; }
   .brand p  { font-size: 12px; color: #93c5fd; margin-top: 2px; }
-  .controls { display: grid; grid-template-columns: minmax(120px, 0.65fr) minmax(240px, 1.45fr) repeat(5, minmax(130px, 1fr)) auto; gap: 8px; align-items: center; }
+  .controls { display: grid; grid-template-columns: minmax(120px, 0.65fr) minmax(260px, 1.6fr) repeat(6, minmax(124px, 1fr)) auto; gap: 8px; align-items: center; }
   .primary-actions { display: flex; gap: 7px; align-items: center; justify-content: flex-end; flex-wrap: nowrap; }
   select, input[type="text"] { background: #fff; border: 1.5px solid #cbd5e1; color: #1e293b; padding: 6px 11px; border-radius: 7px; font-size: 13px; outline: none; height: 34px; transition: border-color 0.2s; }
   select:focus, input[type="text"]:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
@@ -107,6 +107,10 @@
   .card.prio-Normal::before { background: #cbd5e1; }
   .card:hover { border-color: #3b82f6; box-shadow: 0 4px 14px rgba(37,99,235,0.12); transform: translateY(-1px); }
   .card.dragging { opacity: 0.4; cursor: grabbing; }
+  .card.archived-compact { padding: 9px 10px 9px 14px; }
+  .card.archived-compact .card-top { margin-bottom: 4px; }
+  .card.archived-compact .card-desc { -webkit-line-clamp: 1; margin-bottom: 0; font-size: 12px; }
+  .card.archived-compact .card-meta, .card.archived-compact .card-extra { display: none; }
   .card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 7px; gap: 8px; }
   .card-aba { font-size: 10px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: #1d4ed8; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; }
   .card-badges { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
@@ -184,7 +188,7 @@
   .operator-input { width: 138px; }
   @media (max-width: 1500px) {
     header { grid-template-columns: 1fr; align-items: stretch; }
-    .controls { grid-template-columns: minmax(120px, 0.7fr) minmax(220px, 1.4fr) repeat(5, minmax(120px, 1fr)); }
+    .controls { grid-template-columns: minmax(120px, 0.7fr) minmax(220px, 1.4fr) repeat(6, minmax(120px, 1fr)); }
     .primary-actions { grid-column: 1 / -1; justify-content: flex-start; }
   }
   @media (max-width: 760px) {
@@ -271,7 +275,7 @@
   </div>
   <div class="controls">
     <input type="text" id="operatorName" class="operator-input" placeholder="Seu nome" oninput="saveOperatorName()" title="Identifica as próximas alterações neste computador">
-    <input type="text" id="searchInput" placeholder="Buscar descrição, telefone, nome..." oninput="applyFilters()">
+    <input type="text" id="searchInput" placeholder="Buscar descrição, registro, pagamento, telefone..." oninput="applyFilters()">
     <select id="fPrio" onchange="applyFilters()">
       <option value="">Prioridade</option>
       <option value="Alta">Alta</option>
@@ -287,6 +291,13 @@
       <option value="Aguard. Retorno ND">Aguard. Retorno ND</option>
       <option value="Concluído">Concluído</option>
       <option value="Arquivado">Arquivado</option>
+    </select>
+    <select id="fPago" onchange="applyFilters()">
+      <option value="">Pagamento</option>
+      <option value="Sim">Pago</option>
+      <option value="Não">Não pago</option>
+      <option value="Isento">Isento</option>
+      <option value="__blank">Não informado</option>
     </select>
     <select id="colJump" onchange="jumpColumn(this.value)"><option value="">Ir para coluna</option></select>
     <div class="primary-actions">
@@ -393,6 +404,18 @@ function normalizeText(v) {
 }
 function onlyDigits(v) {
   return String(v || '').replace(/\D/g, '');
+}
+function paymentState(c) {
+  return c.pago || '';
+}
+function paymentMatchesQuery(c, q) {
+  const paid = paymentState(c);
+  const forma = normalizeText(c.forma_pagamento || '');
+  if (['pago', 'pagou', 'quitado'].includes(q)) return paid === 'Sim';
+  if (['nao pago', 'não pago', 'pendente', 'cobrar', 'cobranca', 'cobrança'].includes(q)) return paid === 'Não' || !paid;
+  if (['isento', 'isenta'].includes(q)) return paid === 'Isento';
+  if (['nao informado', 'não informado', 'sem pagamento'].includes(q)) return !paid;
+  return paid && normalizeText(paid).includes(q) || forma.includes(q);
 }
 function daysOpen(c) {
   if (['Concluído','Arquivado'].includes(c.situacao)) return 0;
@@ -613,23 +636,26 @@ function applyFilters() {
   const aba  = document.getElementById('fAba').value;
   const recv = document.getElementById('fRecv').value;
   const sit  = document.getElementById('fSit').value;
+  const pago = document.getElementById('fPago').value;
   vis = new Set(cards.filter(c => {
     if (prio && c.priority !== prio) return false;
     if (aba  && c.aba !== aba) return false;
     if (recv && (c.recebido||'').trim() !== recv) return false;
     if (sit  && c.situacao !== sit) return false;
+    if (pago === '__blank' && paymentState(c)) return false;
+    if (pago && pago !== '__blank' && paymentState(c) !== pago) return false;
     if (q) {
-      const parts = [c.descricao,c.protocolo,c.aba,c.telefone,c.recebido,c.apresentado_por,c.nome_retirou,c.cnpj,c.observacoes,c.pago,c.forma_pagamento,c.registro_primitivo];
+      const parts = [c.descricao,c.protocolo,c.aba,c.telefone,c.recebido,c.apresentado_por,c.nome_retirou,c.cnpj,c.observacoes,c.pago,c.forma_pagamento,c.registro_primitivo,c.tipo,c.situacao,c.priority,c.resp_entrega];
       const hay = normalizeText(parts.join(' '));
       const hayDigits = onlyDigits(parts.join(' '));
-      if (!hay.includes(q) && (!qDigits || !hayDigits.includes(qDigits))) return false;
+      if (!hay.includes(q) && !paymentMatchesQuery(c, q) && (!qDigits || !hayDigits.includes(qDigits))) return false;
     }
     return true;
   }).map(c => c.id));
   renderBoard(); renderStats();
 }
 function resetFilters() {
-  ['searchInput','fPrio','fAba','fRecv','fSit','colJump'].forEach(id => { document.getElementById(id).value = ''; });
+  ['searchInput','fPrio','fAba','fRecv','fSit','fPago','colJump'].forEach(id => { document.getElementById(id).value = ''; });
   applyFilters();
 }
 function jumpColumn(id) {
@@ -677,14 +703,14 @@ function renderBoard() {
       <div class="col-body" id="cb-${eid(col.id)}"
            ondragover="dOver(event)" ondragenter="dEnter(event)"
            ondragleave="dLeave(event)" ondrop="dDrop(event,'${col.id}')">
-        ${cc.length ? cc.map(renderCard).join('') : '<div class="col-empty">Nenhum documento nesta coluna</div>'}
+        ${cc.length ? cc.map(c => renderCard(c, col.id === 'Arquivado')).join('') : '<div class="col-empty">Nenhum documento nesta coluna</div>'}
       </div>
       <button class="add-btn" onclick="openAdd('${col.id}')">+ Adicionar documento</button>`;
     board.appendChild(d);
   });
 }
 function eid(s) { return s.replace(/[^a-zA-Z0-9]/g,'_'); }
-function renderCard(c) {
+function renderCard(c, compact = false) {
   const desc = (c.descricao||'').trim() || '(sem descrição)';
   const pago = c.pago || '';
   const payClass = pago === 'Não' ? 'Nao' : (pago || 'NI');
@@ -699,7 +725,7 @@ function renderCard(c) {
     pzEl = `<span class="${cls}">${c.prazo}d</span>`;
   }
   return `
-    <div class="card prio-${c.priority}" id="card-${c.id}"
+    <div class="card prio-${c.priority}${compact ? ' archived-compact' : ''}" id="card-${c.id}"
          draggable="true" ondragstart="dStart(event,'${c.id}')" ondragend="dEnd()"
          onclick="openEdit('${c.id}')">
       <div class="card-top">
@@ -1110,26 +1136,47 @@ function monthKey(v) {
   const iso = toDateInput(v);
   return iso ? iso.slice(0, 7) : '';
 }
+function countBy(items, getter) {
+  const map = new Map();
+  items.forEach(item => {
+    const key = getter(item) || 'Não informado';
+    map.set(key, (map.get(key) || 0) + 1);
+  });
+  return map;
+}
+function tableRowsFromMap(map, limit = 12) {
+  return [...map.entries()]
+    .sort((a,b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0]), 'pt-BR'))
+    .slice(0, limit)
+    .map(([name, total]) => `<tr><td>${esc(name)}</td><td style="text-align:right;font-weight:700">${total}</td></tr>`)
+    .join('');
+}
 function showReport() {
+  const filteredCards = cards.filter(c => vis.has(c.id));
   const openCards = cards.filter(c => !['Concluído','Arquivado'].includes(c.situacao));
   const avgOpen = openCards.length ? Math.round(openCards.reduce((sum, c) => sum + daysOpen(c), 0) / openCards.length) : 0;
   const currentMonth = new Date().toISOString().slice(0, 7);
   const concludedMonth = cards.filter(c => monthKey(c.data_conclusao) === currentMonth).length;
-  const byOwner = new Map();
-  cards.forEach(c => {
-    const owner = (c.recebido || 'Sem responsável').trim() || 'Sem responsável';
-    byOwner.set(owner, (byOwner.get(owner) || 0) + 1);
-  });
-  const ownerRows = [...byOwner.entries()]
-    .sort((a,b) => b[1] - a[1] || a[0].localeCompare(b[0], 'pt-BR'))
-    .slice(0, 12)
-    .map(([name, total]) => `<tr><td>${esc(name)}</td><td style="text-align:right">${total}</td></tr>`).join('');
+  const paid = cards.filter(c => paymentState(c) === 'Sim').length;
+  const unpaid = cards.filter(c => paymentState(c) === 'Não' || !paymentState(c)).length;
+  const exempt = cards.filter(c => paymentState(c) === 'Isento').length;
+  const paidMonth = cards.filter(c => paymentState(c) === 'Sim' && monthKey(c.updatedAt || c.data_conclusao || c.data_entrada) === currentMonth).length;
+  const ownerRows = tableRowsFromMap(countBy(cards, c => (c.recebido || 'Sem responsável').trim() || 'Sem responsável'));
+  const situationRows = tableRowsFromMap(countBy(cards, c => c.situacao || 'Sem situação'), 8);
+  const paymentRows = tableRowsFromMap(countBy(cards, c => paymentState(c) || 'Não informado'), 8);
+  const methodRows = tableRowsFromMap(countBy(cards.filter(c => c.forma_pagamento), c => c.forma_pagamento), 8);
   const staleRows = openCards
     .map(c => ({ ...c, openDays: daysOpen(c) }))
     .filter(c => c.openDays >= 30)
     .sort((a,b) => b.openDays - a.openDays)
     .slice(0, 20)
-    .map(c => `<tr><td>${c.openDays}d</td><td>${esc(c.situacao)}</td><td>${esc(c.recebido || '')}</td><td>${esc((c.descricao || '').slice(0, 90))}</td></tr>`)
+    .map(c => `<tr><td>${c.openDays}d</td><td>${esc(c.situacao)}</td><td>${esc(c.recebido || '')}</td><td>${esc(paymentState(c) || 'N/I')}</td><td>${esc((c.descricao || '').slice(0, 90))}</td></tr>`)
+    .join('');
+  const unpaidRows = cards
+    .filter(c => (paymentState(c) === 'Não' || !paymentState(c)) && !['Arquivado'].includes(c.situacao))
+    .sort(compareCards)
+    .slice(0, 20)
+    .map(c => `<tr><td>${esc(c.situacao || '')}</td><td>${esc(c.recebido || '')}</td><td>${esc(c.registro_primitivo || '')}</td><td>${esc((c.descricao || '').slice(0, 90))}</td></tr>`)
     .join('');
   showModal('Relatório', `
     <div class="fgrid">
@@ -1137,7 +1184,17 @@ function showReport() {
       <div class="field"><label>Tempo médio em aberto</label><div class="ro">${avgOpen} dias</div></div>
       <div class="field"><label>Concluídos no mês</label><div class="ro">${concludedMonth}</div></div>
       <div class="field"><label>Total no painel</label><div class="ro">${cards.length}</div></div>
+      <div class="field"><label>Pagos</label><div class="ro">${paid}</div></div>
+      <div class="field"><label>Não pagos / sem informação</label><div class="ro">${unpaid}</div></div>
+      <div class="field"><label>Isentos</label><div class="ro">${exempt}</div></div>
+      <div class="field"><label>Pagos no mês</label><div class="ro">${paidMonth}</div></div>
+      <div class="field"><label>Filtrados na tela</label><div class="ro">${filteredCards.length}</div></div>
+      <div class="field"><label>Arquivados</label><div class="ro">${cards.filter(c => c.situacao === 'Arquivado').length}</div></div>
+      <div class="field s2"><label>Financeiro por status</label><div class="ro"><table style="width:100%;border-collapse:collapse">${paymentRows || '<tr><td>Nenhum dado</td></tr>'}</table></div></div>
+      <div class="field s2"><label>Formas de pagamento</label><div class="ro"><table style="width:100%;border-collapse:collapse">${methodRows || '<tr><td>Nenhuma forma informada</td></tr>'}</table></div></div>
+      <div class="field s2"><label>Por situação</label><div class="ro"><table style="width:100%;border-collapse:collapse">${situationRows || '<tr><td>Nenhum dado</td></tr>'}</table></div></div>
       <div class="field s2"><label>Por responsável</label><div class="ro"><table style="width:100%;border-collapse:collapse">${ownerRows || '<tr><td>Nenhum dado</td></tr>'}</table></div></div>
+      <div class="field s2"><label>Pendências de cobrança</label><div class="ro"><table style="width:100%;border-collapse:collapse">${unpaidRows || '<tr><td>Nenhuma pendência aberta.</td></tr>'}</table></div></div>
       <div class="field s2"><label>Parados há 30+ dias</label><div class="ro"><table style="width:100%;border-collapse:collapse">${staleRows || '<tr><td>Nenhum documento parado há 30+ dias.</td></tr>'}</table></div></div>
     </div>`,
     `<button class="btn btn-primary" onclick="closeModal()">Fechar</button>`
