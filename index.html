@@ -320,6 +320,7 @@ const ABAS = [
 // ESTADO
 // ═══════════════════════════════════════════════════════
 let cards = [], vis = new Set(), dragId = null, editId = null, db = null;
+let auditEntries = [], editOriginal = null;
 let activeDbUrl = '', auth = null, currentUser = null, firebaseApp = null;
 
 // ═══════════════════════════════════════════════════════
@@ -375,6 +376,25 @@ function compareCards(a, b) {
     || (a.prazo ?? 999999) - (b.prazo ?? 999999)
     || parseDateValue(a.data_entrada) - parseDateValue(b.data_entrada)
     || normalizeText(a.descricao).localeCompare(normalizeText(b.descricao), 'pt-BR');
+}
+function cloneCard(c) {
+  return c ? JSON.parse(JSON.stringify(c)) : null;
+}
+function diffCards(before, after) {
+  if (!before || !after) return [];
+  const labels = {
+    situacao: 'Situação', priority: 'Prioridade', recebido: 'Recebido por',
+    apresentado_por: 'Apresentado por', telefone: 'Telefone', observacoes: 'Observações',
+    resp_entrega: 'Responsável entrega', nome_retirou: 'Quem retirou',
+    situacao_retorno: 'Situação retorno', data_conclusao: 'Data conclusão',
+    data_nd: 'Data ND', data_retorno: 'Data retorno', data_retirada: 'Data retirada'
+  };
+  return Object.keys(labels)
+    .filter(key => String(before[key] ?? '') !== String(after[key] ?? ''))
+    .map(key => ({ field: key, label: labels[key], before: before[key] || '', after: after[key] || '' }));
+}
+function requiresArchiveDetails(c) {
+  return c.situacao === 'Arquivado' && (!c.data_retirada || !c.nome_retirou || !c.resp_entrega);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -483,6 +503,7 @@ function listenFirebase() {
 function buildCards(data) {
   const overrides = data.overrides ? Object.values(data.overrides) : [];
   const newCards  = data.newCards  ? Object.values(data.newCards)  : [];
+  auditEntries = data.audit ? Object.values(data.audit).filter(Boolean) : [];
   cards = INITIAL_DATA.map(c => {
     const ov = overrides.find(o => o && o.id === c.id);
     return ov ? { ...c, ...ov } : { ...c };
@@ -492,7 +513,7 @@ function buildCards(data) {
   if (document.getElementById('fAba').options.length <= 1) populateFilters();
   applyFilters();
 }
-async function saveItem(type, payload) {
+async function saveItem(type, payload, before = null) {
   if (!db) { showToast('❌ Sem conexão.'); return false; }
   setSyncStatus('loading', '💾 Salvando...');
   try {
@@ -501,11 +522,13 @@ async function saveItem(type, payload) {
     payload.updatedAt = savedAt;
     payload.updatedBy = currentUser?.email || localStorage.getItem(OPERATOR_KEY) || '';
     await db.ref(`${DB_PATH}/${type}/${key}`).set(payload);
+    const changes = diffCards(before, payload);
     db.ref(`${DB_PATH}/audit/${Date.now()}_${key}`).set({
       id: payload.id,
       type,
       savedAt,
-      updatedBy: payload.updatedBy
+      updatedBy: payload.updatedBy,
+      changes
     }).catch(() => {});
     setSyncStatus('ok', `✓ Salvo às ${new Date().toLocaleTimeString('pt-BR')} — visível para todos`);
     return true;
@@ -694,9 +717,14 @@ async function dDrop(e, colId) {
   if (!dragId) return;
   const c = cards.find(x => x.id === dragId);
   if (c && c.situacao !== colId) {
+    const before = cloneCard(c);
+    if (colId === 'Arquivado' && requiresArchiveDetails({ ...c, situacao: colId }) && !confirm('Este documento ainda nao tem data de retirada, quem retirou ou responsavel pela entrega. Arquivar mesmo assim?')) {
+      dragId = null;
+      return;
+    }
     c.situacao = colId;
     const isNew = c.id.startsWith('usr_');
-    await saveItem(isNew ? 'newCards' : 'overrides', buildPayload(c, isNew));
+    await saveItem(isNew ? 'newCards' : 'overrides', buildPayload(c, isNew), before);
     showToast(`✓ Movido para "${COLS.find(x => x.id === colId)?.label}"`);
   }
   dragId = null;
@@ -705,7 +733,7 @@ async function dDrop(e, colId) {
 // ═══════════════════════════════════════════════════════
 // MODAL
 // ═══════════════════════════════════════════════════════
-function closeModal() { document.getElementById('overlay').classList.remove('open'); editId = null; }
+function closeModal() { document.getElementById('overlay').classList.remove('open'); editId = null; editOriginal = null; }
 function onOverlayClick(e) { if (e.target.id === 'overlay') closeModal(); }
 function showModal(title, body, foot) {
   document.getElementById('mTitle').textContent = title;
@@ -722,6 +750,7 @@ function openEdit(id) {
   const c = cards.find(x => x.id === id);
   if (!c) return;
   editId = id;
+  editOriginal = cloneCard(c);
 
   showModal('Editar Documento', `
     <div class="fgrid">
@@ -802,6 +831,8 @@ function openEdit(id) {
         <input type="text" id="e_sit_retorno" value="${esc(c.situacao_retorno||'')}">
       </div>
 
+      <div class="fsec">Histórico</div>
+      ${renderHistory(c.id)}
     </div>`,
     `<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
      <button class="btn btn-primary" onclick="saveEdit()">💾 Salvar para todos</button>`
@@ -829,9 +860,11 @@ async function saveEdit() {
   c.data_retorno    = fromDateInput(document.getElementById('e_data_retorno').value);
   c.data_retirada   = fromDateInput(document.getElementById('e_data_retirada').value);
 
+  if (requiresArchiveDetails(c) && !confirm('Arquivar sem data de retirada, quem retirou ou responsavel pela entrega?')) return;
+  const before = editOriginal;
   closeModal();
   const isNew = c.id.startsWith('usr_');
-  const ok = await saveItem(isNew ? 'newCards' : 'overrides', buildPayload(c, isNew));
+  const ok = await saveItem(isNew ? 'newCards' : 'overrides', buildPayload(c, isNew), before);
   if (ok) showToast('✓ Atualizado e sincronizado para todos');
 }
 
@@ -934,7 +967,7 @@ async function addCard() {
   const duplicate = findLikelyDuplicate(nc);
   if (duplicate && !confirm('Possivel documento duplicado encontrado. Deseja adicionar mesmo assim?')) return;
   closeModal();
-  const ok = await saveItem('newCards', nc);
+  const ok = await saveItem('newCards', nc, null);
   if (ok) showToast('✓ Documento adicionado e visível para todos');
 }
 
@@ -958,6 +991,23 @@ function exportBackup() {
   URL.revokeObjectURL(a.href);
   a.remove();
   showToast('Backup gerado neste computador.');
+}
+function renderHistory(id) {
+  const rows = auditEntries
+    .filter(a => a && a.id === id)
+    .sort((a,b) => String(b.savedAt || '').localeCompare(String(a.savedAt || '')))
+    .slice(0, 6);
+  if (!rows.length) return '<div class="field s2"><label>Histórico</label><div class="ro">Nenhuma alteração registrada ainda.</div></div>';
+  return `<div class="field s2"><label>Histórico recente</label><div class="ro">${
+    rows.map(a => {
+      const when = a.savedAt ? new Date(a.savedAt).toLocaleString('pt-BR') : '';
+      const who = a.updatedBy ? ` por ${esc(a.updatedBy)}` : '';
+      const changes = Array.isArray(a.changes) && a.changes.length
+        ? a.changes.slice(0, 4).map(ch => `${esc(ch.label || ch.field)}: ${esc(ch.before || 'vazio')} -> ${esc(ch.after || 'vazio')}`).join('<br>')
+        : 'Registro salvo';
+      return `<div style="margin-bottom:10px"><strong>${esc(when)}${who}</strong><br>${changes}</div>`;
+    }).join('')
+  }</div></div>`;
 }
 function csvCell(v) {
   return `"${String(v ?? '').replace(/"/g, '""')}"`;

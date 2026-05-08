@@ -22,6 +22,8 @@ Este projeto usa Firebase Realtime Database. Nao publique regras restritivas sem
 - Alerta antes de cadastrar um documento que parece duplicado.
 - Filtros rapidos de atencao, documentos abertos e notas devolutivas/retornos.
 - Exportacao CSV dos documentos filtrados para abrir no Excel.
+- Historico recente no modal de cada documento, baseado em `kanban/audit`.
+- Confirmacao ao arquivar documentos sem data de retirada, quem retirou ou responsavel pela entrega.
 - Escrita tentativa em `kanban/audit` para registrar futuras alteracoes sem bloquear o salvamento principal.
 - Regras de banco preparadas em `firebase.rules.json`, ainda nao aplicadas.
 
