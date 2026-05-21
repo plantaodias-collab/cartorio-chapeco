@@ -149,13 +149,32 @@
   .mbody { padding: 18px 22px 20px; }
   .mfoot { display: flex; gap: 8px; justify-content: flex-end; padding: 14px 22px 18px; border-top: 1.5px solid #f1f5f9; background: #f8fafc; border-radius: 0 0 16px 16px; }
 
-  .fgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
+  /* ── Form Grid — MELHORADO ── */
+  .fgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px; }
   .fgrid .s2 { grid-column: 1 / -1; }
-  .fsec { grid-column: 1 / -1; font-size: 11px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; color: #51627a; padding: 12px 0 6px; border-bottom: 1.5px solid #e6edf5; margin-top: 8px; }
+  .fgrid .s1 { grid-column: span 1; }
+
+  /* Section headers com ícone e fundo */
+  .fsec {
+    grid-column: 1 / -1;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 11px; font-weight: 800; letter-spacing: 0.8px;
+    text-transform: uppercase; color: #1d4ed8;
+    padding: 10px 12px 10px; border-radius: 8px;
+    background: linear-gradient(135deg, #eff6ff, #f0f9ff);
+    border: 1px solid #bfdbfe;
+    margin-top: 10px;
+  }
+  .fsec-icon { font-size: 14px; }
 
   /* ── Campos do modal ── */
   .field { display: flex; flex-direction: column; gap: 5px; }
-  .field label { font-size: 11px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: #64748b; }
+  .field label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.4px;
+    text-transform: uppercase; color: #56667c;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .field label .req { color: #ef4444; font-size: 13px; line-height: 1; }
 
   /* campo somente leitura */
   .field .ro {
@@ -172,13 +191,13 @@
     width: 100%; background: #fff; border: 1.5px solid #d1d9e8;
     color: #1e293b; padding: 8px 11px; border-radius: 7px;
     font-size: 13px; outline: none; font-family: inherit;
-    transition: border-color 0.2s; min-height: 36px;
+    transition: border-color 0.2s, box-shadow 0.2s; min-height: 36px;
   }
   .field input[type="date"] { cursor: pointer; }
   .field input:focus, .field select:focus, .field textarea:focus {
     border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
   }
-  .field textarea { resize: vertical; min-height: 72px; line-height: 1.5; }
+  .field textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
 
   /* ── Toast ── */
   .toast { position: fixed; bottom: 22px; right: 22px; background: #1e293b; border-radius: 10px; padding: 11px 18px; font-size: 13px; color: #fff; z-index: 400; transform: translateY(80px); opacity: 0; transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1); max-width: 300px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
@@ -186,6 +205,12 @@
   .security-note { display: none; padding: 8px 22px; background: #fff7ed; border-bottom: 1px solid #fed7aa; color: #9a3412; font-size: 12px; font-weight: 600; }
   .security-note.show { display: block; }
   .operator-input { width: 138px; }
+
+  /* ── Print offer modal ── */
+  .print-offer-body { text-align: center; padding: 28px 20px 10px; }
+  .print-offer-body .offer-icon { font-size: 52px; margin-bottom: 14px; }
+  .print-offer-body h3 { font-size: 17px; font-weight: 800; color: #15803d; margin-bottom: 8px; }
+  .print-offer-body p { font-size: 13px; color: #64748b; line-height: 1.6; }
 
   /* ── Visual polish ── */
   :root {
@@ -213,7 +238,7 @@
   select, input[type="text"], .field input[type="date"], .field select, .field textarea {
     border-color: #cfd8e6;
     box-shadow: 0 1px 0 rgba(255,255,255,0.75) inset;
-    transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease, transform 0.16s ease;
+    transition: border-color 0.16s ease, box-shadow 0.16s ease;
   }
   select:hover, input[type="text"]:hover, .field input[type="date"]:hover, .field select:hover, .field textarea:hover { border-color: #aebbd0; }
   select:focus, input[type="text"]:focus, .field input:focus, .field select:focus, .field textarea:focus {
@@ -225,281 +250,72 @@
   .btn-primary:hover { background: #1d4ed8; box-shadow: 0 8px 20px rgba(37,99,235,0.3); transform: translateY(-1px); }
   .btn-ghost:hover, .add-btn:hover, .stat-pill:hover { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
   .sync-bar { border-bottom-color: var(--line); box-shadow: 0 1px 0 rgba(255,255,255,0.7) inset; }
-  .stats-bar {
-    background: rgba(255,255,255,0.94);
-    border-bottom-color: var(--line);
-    box-shadow: 0 4px 16px rgba(15,23,42,0.06);
-  }
-  .stat-pill {
-    background: #fff;
-    border-color: var(--line);
-    border-radius: 999px;
-    box-shadow: 0 1px 2px rgba(15,23,42,0.04);
-  }
+  .stats-bar { background: rgba(255,255,255,0.94); border-bottom-color: var(--line); box-shadow: 0 4px 16px rgba(15,23,42,0.06); gap: 7px; padding: 8px 22px 9px; }
+  .stat-pill { background: #fff; border-color: var(--line); border-radius: 999px; box-shadow: 0 1px 2px rgba(15,23,42,0.04); min-height: 28px; padding: 4px 11px; font-size: 11px; color: #4b5d75; }
+  .stat-pill .sd { width: 7px; height: 7px; }
+  .stat-pill .sc { font-size: 14px; color: #142033; min-width: 22px; text-align: right; }
   .board { gap: 18px; padding-top: 20px; }
-  .column {
-    background: var(--panel);
-    border-color: var(--line);
-    width: 326px;
-    min-width: 326px;
-    box-shadow: 0 1px 0 rgba(255,255,255,0.9) inset, 0 8px 20px rgba(15,23,42,0.06);
-    transition: width 0.18s ease, min-width 0.18s ease, opacity 0.18s ease, box-shadow 0.18s ease;
-  }
-  .col-head {
-    background: var(--panel-strong);
-    border-bottom-color: var(--line);
-  }
+  .column { background: var(--panel); border-color: var(--line); width: 326px; min-width: 326px; border-radius: 12px; box-shadow: 0 1px 0 rgba(255,255,255,0.9) inset, 0 8px 20px rgba(15,23,42,0.06); transition: width 0.18s ease, min-width 0.18s ease, opacity 0.18s ease, box-shadow 0.18s ease; }
+  .col-head { background: var(--panel-strong); border-bottom-color: var(--line); position: sticky; top: 0; z-index: 2; border-radius: 12px 12px 0 0; }
   .col-name { font-weight: 800; }
   .col-actions { display: flex; align-items: center; gap: 6px; }
-  .col-toggle {
-    width: 24px;
-    height: 24px;
-    border: 1px solid #c8d2df;
-    border-radius: 6px;
-    background: rgba(255,255,255,0.72);
-    color: #506176;
-    cursor: pointer;
-    font-size: 13px;
-    line-height: 1;
-    transition: background 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
-  }
-  .col-toggle:hover {
-    background: #fff;
-    border-color: #93b4e8;
-    transform: translateY(-1px);
-  }
-  .column.collapsed {
-    width: 54px;
-    min-width: 54px;
-    overflow: hidden;
-  }
-  .column.collapsed .col-head {
-    min-height: 220px;
-    padding: 10px 8px;
-    flex-direction: column;
-    justify-content: flex-start;
-    gap: 10px;
-  }
-  .column.collapsed .col-name {
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
-    gap: 6px;
-    white-space: nowrap;
-  }
-  .column.collapsed .col-bar {
-    width: 14px;
-    height: 4px;
-  }
-  .column.collapsed .col-actions {
-    flex-direction: column;
-  }
-  .column.collapsed .col-body,
-  .column.collapsed .add-btn {
-    display: none;
-  }
+  .col-toggle { width: 24px; height: 24px; border: 1px solid #c8d2df; border-radius: 6px; background: rgba(255,255,255,0.72); color: #506176; cursor: pointer; font-size: 13px; line-height: 1; transition: background 0.16s ease, border-color 0.16s ease, transform 0.16s ease; }
+  .col-toggle:hover { background: #fff; border-color: #93b4e8; transform: translateY(-1px); }
+  .col-cnt { background: rgba(255,255,255,0.84); box-shadow: 0 1px 0 rgba(255,255,255,0.8) inset; }
+  .column.collapsed { width: 54px; min-width: 54px; overflow: hidden; }
+  .column.collapsed .col-head { min-height: 220px; padding: 10px 8px; flex-direction: column; justify-content: flex-start; gap: 10px; }
+  .column.collapsed .col-name { writing-mode: vertical-rl; transform: rotate(180deg); gap: 6px; white-space: nowrap; }
+  .column.collapsed .col-bar { width: 14px; height: 4px; }
+  .column.collapsed .col-actions { flex-direction: column; }
+  .column.collapsed .col-body, .column.collapsed .add-btn { display: none; }
   .col-body { scrollbar-gutter: stable; }
   .col-body::-webkit-scrollbar { width: 8px; }
   .col-body::-webkit-scrollbar-thumb { background: #b7c2d1; border-radius: 999px; border: 2px solid var(--panel); }
-  .card {
-    border-color: #dde5ef;
-    box-shadow: var(--shadow-sm);
-    transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
-  }
-  .card:hover {
-    border-color: #8fb7ff;
-    box-shadow: var(--shadow-md);
-    transform: translateY(-2px);
-  }
+  .card { border-color: #dde5ef; box-shadow: var(--shadow-sm); background: rgba(255,255,255,0.96); transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease; }
+  .card::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0)); }
+  .card-top, .card-desc, .card-extra, .card-meta { position: relative; z-index: 1; }
+  .card:hover { border-color: #8fb7ff; box-shadow: var(--shadow-md); transform: translateY(-2px); }
   .card.dragging { transform: rotate(0.4deg) scale(0.99); }
   .card-aba { color: #1e5ad7; }
-  .pchip, .paychip, .cm, .pz { box-shadow: 0 1px 0 rgba(255,255,255,0.75) inset; }
+  .card.archived-compact { background: rgba(255,255,255,0.78); border-color: #e4eaf2; box-shadow: none; }
+  .card.archived-compact:hover { background: #fff; box-shadow: var(--shadow-sm); }
+  .card.archived-compact .card-aba { color: #355071; }
   .card-desc { color: var(--text); }
   .card-extra { color: var(--muted); }
   .card-meta { border-top-color: #e9eef5; }
   .cm-date { margin-left: 0; }
+  .add-btn { background: rgba(255,255,255,0.34); }
+  .add-btn:hover { background: rgba(255,255,255,0.72); }
   .overlay { background: rgba(11,18,32,0.56); backdrop-filter: blur(6px); }
   .overlay.open .modal { animation: modalIn 0.18s ease-out; }
-  @keyframes modalIn {
-    from { opacity: 0; transform: translateY(10px) scale(0.985); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
-  }
+  @keyframes modalIn { from { opacity: 0; transform: translateY(10px) scale(0.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
   .modal { border-color: var(--line); border-radius: 12px; box-shadow: var(--shadow-lg); }
   .mhead { border-bottom-color: var(--line); }
   .mhead h2 { font-weight: 800; }
   .mfoot { border-top-color: var(--line); background: #f6f8fb; }
-  .fsec { color: #405169; border-bottom-color: var(--line); }
-  .field label { color: #56667c; }
   .field .ro { background: #f8fafc; border-color: var(--line); }
   .field .ro table td { padding: 6px 4px; border-bottom: 1px solid #edf2f7; vertical-align: top; }
   .field .ro table tr:last-child td { border-bottom: none; }
-  .security-note {
-    position: absolute;
-    top: 8px;
-    right: 62px;
-    max-width: 36px;
-    height: 28px;
-    overflow: hidden;
-    padding: 0 9px;
-    border: 1px solid rgba(251,191,36,0.42);
-    border-radius: 999px;
-    background: rgba(255,247,237,0.96);
-    color: transparent;
-    font-size: 0;
-    font-weight: 500;
-    cursor: help;
-    z-index: 120;
-    transition: max-width 0.18s ease, color 0.18s ease, font-size 0.18s ease, padding 0.18s ease, box-shadow 0.18s ease;
-  }
-  .security-note::before {
-    content: '!';
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 16px;
-    height: 16px;
-    margin-top: 5px;
-    border-radius: 50%;
-    background: #f59e0b;
-    color: #fff;
-    font-size: 11px;
-    font-weight: 900;
-  }
-  .security-note:hover {
-    max-width: min(760px, calc(100vw - 120px));
-    padding: 6px 12px;
-    color: #9a4a12;
-    font-size: 11px;
-    box-shadow: var(--shadow-md);
-  }
-  .security-note:hover::before {
-    margin-top: 0;
-    margin-right: 8px;
-    vertical-align: -3px;
-  }
-  .sync-bar {
-    justify-content: flex-end;
-    min-height: 28px;
-    padding: 4px 22px;
-    font-size: 0;
-    font-weight: 600;
-  }
+  .security-note { position: absolute; top: 8px; right: 62px; max-width: 36px; height: 28px; overflow: hidden; padding: 0 9px; border: 1px solid rgba(251,191,36,0.42); border-radius: 999px; background: rgba(255,247,237,0.96); color: transparent; font-size: 0; font-weight: 500; cursor: help; z-index: 120; transition: max-width 0.18s ease, color 0.18s ease, font-size 0.18s ease, padding 0.18s ease, box-shadow 0.18s ease; }
+  .security-note::before { content: '!'; display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; margin-top: 5px; border-radius: 50%; background: #f59e0b; color: #fff; font-size: 11px; font-weight: 900; }
+  .security-note:hover { max-width: min(760px, calc(100vw - 120px)); padding: 6px 12px; color: #9a4a12; font-size: 11px; box-shadow: var(--shadow-md); }
+  .security-note:hover::before { margin-top: 0; margin-right: 8px; vertical-align: -3px; }
+  .sync-bar { justify-content: flex-end; min-height: 28px; padding: 4px 22px; font-size: 0; font-weight: 600; }
   .sync-bar span { font-size: 0; }
   .sync-bar.ok::after { content: 'Online'; font-size: 11px; }
   .sync-bar.loading::after { content: 'Sincronizando'; font-size: 11px; }
   .sync-bar.error::after { content: 'Erro de conexão'; font-size: 11px; }
-  .sync-bar.ok {
-    background: #f9fbf8;
-    border-color: #d7eadb;
-    color: #166534;
-  }
-  .stats-bar {
-    gap: 7px;
-    padding: 8px 22px 9px;
-  }
-  .stat-pill {
-    min-height: 28px;
-    padding: 4px 11px;
-    font-size: 11px;
-    color: #4b5d75;
-  }
-  .stat-pill .sd { width: 7px; height: 7px; }
-  .stat-pill .sc { font-size: 14px; color: #142033; }
-  .stat-pill .sc {
-    min-width: 22px;
-    text-align: right;
-  }
-  .column {
-    border-radius: 12px;
-  }
-  .col-head {
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    border-radius: 12px 12px 0 0;
-  }
-  .col-cnt {
-    background: rgba(255,255,255,0.84);
-    box-shadow: 0 1px 0 rgba(255,255,255,0.8) inset;
-  }
-  .card {
-    background: rgba(255,255,255,0.96);
-  }
-  .card::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0));
-  }
-  .card-top, .card-desc, .card-extra, .card-meta { position: relative; z-index: 1; }
-  .card.archived-compact {
-    background: rgba(255,255,255,0.78);
-    border-color: #e4eaf2;
-    box-shadow: none;
-  }
-  .card.archived-compact:hover {
-    background: #fff;
-    box-shadow: var(--shadow-sm);
-  }
-  .card.archived-compact .card-aba {
-    color: #355071;
-  }
-  .add-btn {
-    background: rgba(255,255,255,0.34);
-  }
-  .add-btn:hover {
-    background: rgba(255,255,255,0.72);
-  }
-  body.focus-mode header {
-    grid-template-columns: 1fr auto;
-    padding: 10px 18px;
-  }
-  body.focus-mode .brand p,
-  body.focus-mode .controls > :not(.primary-actions),
-  body.focus-mode .security-note,
-  body.focus-mode .sync-bar,
-  body.focus-mode .stats-bar {
-    display: none !important;
-  }
-  body.focus-mode .primary-actions {
-    grid-column: auto;
-    justify-content: flex-end;
-  }
-  body.focus-mode .primary-actions .btn-ghost:not(.focus-keep),
-  body.focus-mode .primary-actions #logoutBtn,
-  body.focus-mode .primary-actions .btn-sm {
-    display: none;
-  }
-  body.focus-mode .board {
-    min-height: calc(100vh - 76px);
-    padding-top: 14px;
-  }
-  body.focus-mode .column {
-    max-height: calc(100vh - 96px);
-  }
-  @media (max-width: 1500px) {
-    header { grid-template-columns: 1fr; align-items: stretch; }
-    .controls { grid-template-columns: minmax(120px, 0.7fr) minmax(220px, 1.4fr) repeat(6, minmax(120px, 1fr)); }
-    .primary-actions { grid-column: 1 / -1; justify-content: flex-start; }
-  }
-  @media (max-width: 760px) {
-    body { font-size: 13px; }
-    header { padding: 10px; align-items: stretch; }
-    .brand { width: 100%; }
-    .brand h1 { font-size: 15px; }
-    .brand p { font-size: 11px; }
-    .controls { width: 100%; gap: 6px; grid-template-columns: 1fr 1fr; }
-    .controls input, .controls select { flex: 1 1 150px; min-width: 0; }
-    #searchInput { width: auto; flex-basis: 100%; grid-column: 1 / -1; }
-    .primary-actions { position: sticky; bottom: 0; z-index: 150; width: 100%; background: #1e3a5f; padding-top: 6px; }
-    .primary-actions .btn { flex: 1 1 auto; padding: 0 10px; }
-    .stats-bar { padding: 8px 10px; }
-    .board { padding: 12px 10px 90px; gap: 10px; scroll-snap-type: x mandatory; min-height: calc(100vh - 250px); }
-    .column { width: calc(100vw - 32px); min-width: calc(100vw - 32px); max-height: calc(100vh - 285px); scroll-snap-align: start; }
-    .modal { max-height: 94vh; }
-    .fgrid { grid-template-columns: 1fr; }
-    .fgrid .s2 { grid-column: auto; }
-  }
+  .sync-bar.ok { background: #f9fbf8; border-color: #d7eadb; color: #166534; }
+  .column { border-radius: 12px; }
+  .col-head { border-radius: 12px 12px 0 0; }
+  body.focus-mode header { grid-template-columns: 1fr auto; padding: 10px 18px; }
+  body.focus-mode .brand p, body.focus-mode .controls > :not(.primary-actions), body.focus-mode .security-note, body.focus-mode .sync-bar, body.focus-mode .stats-bar { display: none !important; }
+  body.focus-mode .primary-actions { grid-column: auto; justify-content: flex-end; }
+  body.focus-mode .primary-actions .btn-ghost:not(.focus-keep), body.focus-mode .primary-actions #logoutBtn, body.focus-mode .primary-actions .btn-sm { display: none; }
+  body.focus-mode .board { min-height: calc(100vh - 76px); padding-top: 14px; }
+  body.focus-mode .column { max-height: calc(100vh - 96px); }
+  @media (max-width: 1500px) { header { grid-template-columns: 1fr; align-items: stretch; } .controls { grid-template-columns: minmax(120px, 0.7fr) minmax(220px, 1.4fr) repeat(6, minmax(120px, 1fr)); } .primary-actions { grid-column: 1 / -1; justify-content: flex-start; } }
+  @media (max-width: 760px) { body { font-size: 13px; } header { padding: 10px; align-items: stretch; } .brand { width: 100%; } .brand h1 { font-size: 15px; } .brand p { font-size: 11px; } .controls { width: 100%; gap: 6px; grid-template-columns: 1fr 1fr; } .controls input, .controls select { flex: 1 1 150px; min-width: 0; } #searchInput { width: auto; flex-basis: 100%; grid-column: 1 / -1; } .primary-actions { position: sticky; bottom: 0; z-index: 150; width: 100%; background: #1e3a5f; padding-top: 6px; } .primary-actions .btn { flex: 1 1 auto; padding: 0 10px; } .stats-bar { padding: 8px 10px; } .board { padding: 12px 10px 90px; gap: 10px; scroll-snap-type: x mandatory; min-height: calc(100vh - 250px); } .column { width: calc(100vw - 32px); min-width: calc(100vw - 32px); max-height: calc(100vh - 285px); scroll-snap-align: start; } .modal { max-height: 94vh; } .fgrid { grid-template-columns: 1fr; } .fgrid .s2 { grid-column: auto; } }
 </style>
 </head>
 <body>
@@ -509,7 +325,6 @@
   <div class="setup-card">
     <h2>🔧 Conectar ao banco de dados</h2>
     <p class="sub">Esta configuração é feita <strong>uma única vez por computador</strong>. O banco é gratuito.</p>
-
     <div class="step">
       <div class="step-num">Passo 1 — Criar projeto Firebase</div>
       <p>Acesse <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> → <strong>"Adicionar projeto"</strong> → nome: <code>cartorio-chapeco</code> → desative Google Analytics → <strong>"Criar projeto"</strong>.</p>
@@ -528,7 +343,6 @@
              onkeydown="if(event.key==='Enter') setupFirebase()">
       <div class="setup-error" id="setupError">❌ URL inválida. Deve começar com <code>https://</code> e conter <code>firebaseio.com</code></div>
     </div>
-
     <button class="setup-btn" onclick="setupFirebase()">✓ Conectar e abrir o painel</button>
     <div class="step">
       <div class="step-num">Opcional - Ativar login</div>
@@ -662,24 +476,23 @@ let auditEntries = [], editOriginal = null;
 let activeDbUrl = '', auth = null, currentUser = null, firebaseApp = null;
 let focusMode = localStorage.getItem('cartorio_focus_mode') === '1';
 let collapsedCols = new Set(JSON.parse(localStorage.getItem('cartorio_collapsed_cols') || '[]'));
+let lastSavedCard = null;
 
 // ═══════════════════════════════════════════════════════
 // UTILS DE DATA
-// Converte "2025-12-01" ↔ "01/12/2025"
-// O input[type=date] exige formato YYYY-MM-DD
 // ═══════════════════════════════════════════════════════
 function toDateInput(v) {
   if (!v) return '';
   v = String(v).trim();
-  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;           // já está certo
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
   const m = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (m) return `${m[3]}-${m[2]}-${m[1]}`;               // dd/mm/yyyy → yyyy-mm-dd
+  if (m) return `${m[3]}-${m[2]}-${m[1]}`;
   return '';
 }
 function fromDateInput(v) {
   if (!v) return '';
   const m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (m) return `${m[3]}/${m[2]}/${m[1]}`;               // yyyy-mm-dd → dd/mm/yyyy
+  if (m) return `${m[3]}/${m[2]}/${m[1]}`;
   return v;
 }
 function todayBr() {
@@ -692,7 +505,7 @@ function parseDateValue(v) {
 function normalizeText(v) {
   return String(v || '')
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
     .trim();
 }
@@ -787,9 +600,7 @@ function parseAuthConfig(raw) {
   try {
     const cfg = JSON.parse(raw);
     return cfg && cfg.apiKey && cfg.authDomain && cfg.projectId ? cfg : null;
-  } catch(e) {
-    return null;
-  }
+  } catch(e) { return null; }
 }
 function connectFirebase(url) {
   activeDbUrl = url;
@@ -877,11 +688,7 @@ async function saveItem(type, payload, before = null) {
     await db.ref(`${DB_PATH}/${type}/${key}`).set(payload);
     const changes = diffCards(before, payload);
     db.ref(`${DB_PATH}/audit/${Date.now()}_${key}`).set({
-      id: payload.id,
-      type,
-      savedAt,
-      updatedBy: payload.updatedBy,
-      changes
+      id: payload.id, type, savedAt, updatedBy: payload.updatedBy, changes
     }).catch(() => {});
     setSyncStatus('ok', `✓ Salvo às ${new Date().toLocaleTimeString('pt-BR')} — visível para todos`);
     return true;
@@ -980,11 +787,9 @@ function quickFilter(kind) {
   renderBoard(); renderStats();
 }
 function findLikelyDuplicate(candidate) {
-  const protocol = normalizeText(candidate.protocolo);
   const phone = onlyDigits(candidate.telefone);
   const desc = normalizeText(candidate.descricao);
   return cards.find(c => {
-    if (protocol && normalizeText(c.protocolo) === protocol) return true;
     if (phone && phone.length >= 8 && onlyDigits(c.telefone).endsWith(phone.slice(-8))) return true;
     return desc && normalizeText(c.descricao) === desc;
   });
@@ -1141,8 +946,7 @@ function showModal(title, body, foot) {
 }
 
 // ═══════════════════════════════════════════════════════
-// EDITAR CARTÃO
-// Todos os campos de data agora são input[type=date] editáveis
+// EDITAR CARTÃO — sem Nº Protocolo e CPF/CNPJ
 // ═══════════════════════════════════════════════════════
 function openEdit(id) {
   const c = cards.find(x => x.id === id);
@@ -1153,19 +957,29 @@ function openEdit(id) {
   showModal('Editar Documento', `
     <div class="fgrid">
 
-      <div class="fsec">Identificação</div>
+      <div class="fsec"><span class="fsec-icon">📄</span> Identificação</div>
       <div class="field s2">
         <label>Descrição / Partes</label>
         <div class="ro">${esc(c.descricao||'—')}</div>
       </div>
-      <div class="field"><label>Aba / Serviço</label><div class="ro">${esc(c.aba||'—')}</div></div>
-      <div class="field"><label>Nº Protocolo</label><div class="ro">${esc(c.protocolo||'—')}</div></div>
-      <div class="field"><label>Tipo de Ato</label><div class="ro">${esc(c.tipo||'—')}</div></div>
-      <div class="field"><label>Data de Entrada</label><div class="ro">${c.data_entrada||'—'}</div></div>
-      <div class="field"><label>CNPJ / CPF</label><div class="ro">${esc(c.cnpj||'—')}</div></div>
-      <div class="field"><label>Número do Registro Primitivo</label><input type="text" id="e_registro_primitivo" value="${esc(c.registro_primitivo||'')}" placeholder="Registro constante no sistema"></div>
+      <div class="field">
+        <label>Aba / Serviço</label>
+        <div class="ro">${esc(c.aba||'—')}</div>
+      </div>
+      <div class="field">
+        <label>Tipo de Ato</label>
+        <div class="ro">${esc(c.tipo||'—')}</div>
+      </div>
+      <div class="field">
+        <label>Data de Entrada</label>
+        <div class="ro">${c.data_entrada||'—'}</div>
+      </div>
+      <div class="field">
+        <label>Número do Registro Primitivo</label>
+        <input type="text" id="e_registro_primitivo" value="${esc(c.registro_primitivo||'')}" placeholder="Registro constante no sistema">
+      </div>
 
-      <div class="fsec">Pagamento</div>
+      <div class="fsec"><span class="fsec-icon">💳</span> Pagamento</div>
       <div class="field">
         <label>Pago?</label>
         <select id="e_pago">
@@ -1180,7 +994,7 @@ function openEdit(id) {
         <input type="text" id="e_forma_pagamento" value="${esc(c.forma_pagamento||'')}" placeholder="Pix, dinheiro, cartão...">
       </div>
 
-      <div class="fsec">Atendimento</div>
+      <div class="fsec"><span class="fsec-icon">👤</span> Atendimento</div>
       <div class="field">
         <label>Recebido por</label>
         <input type="text" id="e_recv" value="${esc(c.recebido||'')}">
@@ -1194,7 +1008,7 @@ function openEdit(id) {
         <input type="text" id="e_tel" value="${esc(c.telefone||'')}" placeholder="(49) 9 9999-9999">
       </div>
 
-      <div class="fsec">Situação e Prioridade</div>
+      <div class="fsec"><span class="fsec-icon">📊</span> Situação e Prioridade</div>
       <div class="field">
         <label>Situação</label>
         <select id="e_sit">
@@ -1214,7 +1028,7 @@ function openEdit(id) {
         <textarea id="e_obs">${esc(c.observacoes||'')}</textarea>
       </div>
 
-      <div class="fsec">Datas e Entregas — todos editáveis</div>
+      <div class="fsec"><span class="fsec-icon">📅</span> Datas e Entregas</div>
       <div class="field">
         <label>Data Conclusão</label>
         <input type="date" id="e_data_conclusao" value="${toDateInput(c.data_conclusao)}">
@@ -1244,10 +1058,11 @@ function openEdit(id) {
         <input type="text" id="e_sit_retorno" value="${esc(c.situacao_retorno||'')}">
       </div>
 
-      <div class="fsec">Histórico</div>
+      <div class="fsec"><span class="fsec-icon">🕓</span> Histórico</div>
       ${renderHistory(c.id)}
     </div>`,
-    `<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    `<button class="btn btn-ghost" onclick="printDocument(cards.find(x=>x.id==='${escAttr(id)}'))">🖨️ Imprimir</button>
+     <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
      <button class="btn btn-primary" onclick="saveEdit()">💾 Salvar para todos</button>`
   );
 }
@@ -1255,8 +1070,6 @@ function openEdit(id) {
 async function saveEdit() {
   const c = cards.find(x => x.id === editId);
   if (!c) return;
-
-  // Campos de texto
   c.recebido        = document.getElementById('e_recv').value.trim();
   c.apresentado_por = document.getElementById('e_apres').value.trim();
   c.telefone        = document.getElementById('e_tel').value.trim();
@@ -1269,8 +1082,6 @@ async function saveEdit() {
   c.resp_entrega    = document.getElementById('e_resp_entrega').value.trim();
   c.nome_retirou    = document.getElementById('e_nome_retirou').value.trim();
   c.situacao_retorno= document.getElementById('e_sit_retorno').value.trim();
-
-  // Campos de data — converte do input (YYYY-MM-DD) para armazenamento (DD/MM/YYYY)
   c.data_conclusao  = fromDateInput(document.getElementById('e_data_conclusao').value);
   c.data_nd         = fromDateInput(document.getElementById('e_data_nd').value);
   c.data_retorno    = fromDateInput(document.getElementById('e_data_retorno').value);
@@ -1289,7 +1100,6 @@ async function saveEdit() {
 
 function buildPayload(c, isNew) {
   if (isNew) return { ...c };
-  // Para cartões da planilha, salva apenas os campos editáveis
   return {
     id:               c.id,
     situacao:         c.situacao         || '',
@@ -1312,33 +1122,46 @@ function buildPayload(c, isNew) {
 }
 
 // ═══════════════════════════════════════════════════════
-// NOVO CARTÃO
+// NOVO CARTÃO — sem Nº Protocolo e CPF/CNPJ
 // ═══════════════════════════════════════════════════════
 function openAdd(situacao) {
   editId = null;
   const def = situacao || 'Em andamento';
   showModal('Novo Documento', `
     <div class="fgrid">
-      <div class="fsec">Identificação</div>
+      <div class="fsec"><span class="fsec-icon">📄</span> Identificação</div>
       <div class="field s2">
-        <label>Descrição / Partes *</label>
-        <textarea id="n_desc" placeholder="Descreva o documento ou partes envolvidas..."></textarea>
+        <label>Descrição / Partes <span class="req">*</span></label>
+        <textarea id="n_desc" placeholder="Descreva o documento ou partes envolvidas..." style="min-height:90px"></textarea>
       </div>
       <div class="field">
-        <label>Aba / Serviço *</label>
+        <label>Aba / Serviço <span class="req">*</span></label>
         <select id="n_aba">${ABAS.map(a=>`<option value="${a}">${a}</option>`).join('')}<option value="Outro">Outro</option></select>
       </div>
-      <div class="field"><label>Nº Protocolo</label><input type="text" id="n_prot" placeholder="Nº Protocolo"></div>
-      <div class="field"><label>Tipo de Ato</label><input type="text" id="n_tipo" placeholder="Ex: 1º Registro de Estatuto"></div>
-      <div class="field"><label>CNPJ / CPF</label><input type="text" id="n_cnpj"></div>
-      <div class="field"><label>Número do Registro Primitivo</label><input type="text" id="n_registro_primitivo" placeholder="Registro constante no sistema"></div>
+      <div class="field">
+        <label>Tipo de Ato</label>
+        <input type="text" id="n_tipo" placeholder="Ex: 1º Registro de Estatuto">
+      </div>
+      <div class="field s2">
+        <label>Número do Registro Primitivo</label>
+        <input type="text" id="n_registro_primitivo" placeholder="Registro constante no sistema">
+      </div>
 
-      <div class="fsec">Atendimento</div>
-      <div class="field"><label>Recebido por</label><input type="text" id="n_recv" placeholder="Nome do atendente"></div>
-      <div class="field"><label>Apresentado por</label><input type="text" id="n_apres" placeholder="Nome do apresentante"></div>
-      <div class="field s2"><label>Telefone para Contato</label><input type="text" id="n_tel" placeholder="(49) 9 9999-9999"></div>
+      <div class="fsec"><span class="fsec-icon">👤</span> Atendimento</div>
+      <div class="field">
+        <label>Recebido por</label>
+        <input type="text" id="n_recv" placeholder="Nome do atendente">
+      </div>
+      <div class="field">
+        <label>Apresentado por</label>
+        <input type="text" id="n_apres" placeholder="Nome do apresentante">
+      </div>
+      <div class="field s2">
+        <label>Telefone para Contato</label>
+        <input type="text" id="n_tel" placeholder="(49) 9 9999-9999">
+      </div>
 
-      <div class="fsec">Pagamento</div>
+      <div class="fsec"><span class="fsec-icon">💳</span> Pagamento</div>
       <div class="field">
         <label>Pago?</label>
         <select id="n_pago">
@@ -1348,9 +1171,12 @@ function openAdd(situacao) {
           <option value="Isento">Isento</option>
         </select>
       </div>
-      <div class="field"><label>Forma de Pagamento</label><input type="text" id="n_forma_pagamento" placeholder="Pix, dinheiro, cartão..."></div>
+      <div class="field">
+        <label>Forma de Pagamento</label>
+        <input type="text" id="n_forma_pagamento" placeholder="Pix, dinheiro, cartão...">
+      </div>
 
-      <div class="fsec">Situação</div>
+      <div class="fsec"><span class="fsec-icon">📊</span> Situação</div>
       <div class="field">
         <label>Situação</label>
         <select id="n_sit">${COLS.map(col=>`<option value="${col.id}"${col.id===def?' selected':''}>${col.label}</option>`).join('')}</select>
@@ -1363,13 +1189,28 @@ function openAdd(situacao) {
           <option value="Alta">Alta</option>
         </select>
       </div>
-      <div class="field s2"><label>Observações</label><textarea id="n_obs" placeholder="Informações adicionais..."></textarea></div>
+      <div class="field s2">
+        <label>Observações</label>
+        <textarea id="n_obs" placeholder="Informações adicionais..."></textarea>
+      </div>
 
-      <div class="fsec">Datas</div>
-      <div class="field"><label>Data de Entrada</label><input type="date" id="n_data_entrada" value="${new Date().toISOString().slice(0,10)}"></div>
-      <div class="field"><label>Data Conclusão</label><input type="date" id="n_data_conclusao"></div>
-      <div class="field"><label>Data Nota Devolutiva</label><input type="date" id="n_data_nd"></div>
-      <div class="field"><label>Data Retorno</label><input type="date" id="n_data_retorno"></div>
+      <div class="fsec"><span class="fsec-icon">📅</span> Datas</div>
+      <div class="field">
+        <label>Data de Entrada</label>
+        <input type="date" id="n_data_entrada" value="${new Date().toISOString().slice(0,10)}">
+      </div>
+      <div class="field">
+        <label>Data Conclusão</label>
+        <input type="date" id="n_data_conclusao">
+      </div>
+      <div class="field">
+        <label>Data Nota Devolutiva</label>
+        <input type="date" id="n_data_nd">
+      </div>
+      <div class="field">
+        <label>Data Retorno</label>
+        <input type="date" id="n_data_retorno">
+      </div>
     </div>`,
     `<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
      <button class="btn btn-primary" onclick="addCard()">➕ Adicionar para todos</button>`
@@ -1381,11 +1222,11 @@ async function addCard() {
   if (!desc) { showToast('⚠ Informe a descrição'); return; }
   const nc = {
     id:              'usr_' + Date.now(),
-    protocolo:       document.getElementById('n_prot').value.trim()  || '',
+    protocolo:       '',
     data_entrada:    fromDateInput(document.getElementById('n_data_entrada').value) || todayBr(),
     tipo:            document.getElementById('n_tipo').value.trim(),
     descricao:       desc,
-    cnpj:            document.getElementById('n_cnpj').value.trim(),
+    cnpj:            '',
     registro_primitivo: document.getElementById('n_registro_primitivo').value.trim(),
     recebido:        document.getElementById('n_recv').value.trim(),
     apresentado_por: document.getElementById('n_apres').value.trim(),
@@ -1406,7 +1247,145 @@ async function addCard() {
   if (duplicate && !confirm('Possivel documento duplicado encontrado. Deseja adicionar mesmo assim?')) return;
   closeModal();
   const ok = await saveItem('newCards', nc, null);
-  if (ok) showToast('✓ Documento adicionado e visível para todos');
+  if (ok) {
+    lastSavedCard = nc;
+    showPrintOffer();
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// IMPRIMIR PROTOCOLO DE ENTRADA
+// ═══════════════════════════════════════════════════════
+function showPrintOffer() {
+  showModal('✅ Documento Salvo', `
+    <div class="print-offer-body">
+      <div class="offer-icon">✅</div>
+      <h3>Documento adicionado com sucesso!</h3>
+      <p>Deseja imprimir o protocolo de entrada<br>para acompanhar a ata no registro?</p>
+    </div>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">Agora não</button>
+     <button class="btn btn-primary" onclick="closeModal(); printDocument(lastSavedCard);" style="gap:6px">🖨️ Imprimir Protocolo</button>`
+  );
+}
+
+function printDocument(card) {
+  if (!card) return;
+  const dataBr = new Date().toLocaleDateString('pt-BR', {day:'2-digit', month:'long', year:'numeric'});
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Protocolo de Entrada — ${card.aba || 'Cartório Chapecó'}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; max-width: 780px; margin: 30px auto; padding: 0 24px; color: #111; font-size: 13px; }
+  .header { text-align: center; border-bottom: 3px solid #183454; padding-bottom: 14px; margin-bottom: 22px; }
+  .header h1 { font-size: 17px; font-weight: 800; color: #183454; margin-bottom: 4px; letter-spacing: 0.3px; }
+  .header .subtitle { font-size: 12px; color: #666; }
+  .header .doc-title { margin-top: 10px; font-size: 14px; font-weight: 700; color: #183454; text-transform: uppercase; letter-spacing: 1px; border: 2px solid #183454; display: inline-block; padding: 4px 18px; border-radius: 4px; }
+  .section-title { font-size: 10px; font-weight: 800; text-transform: uppercase; color: #183454; letter-spacing: 1px; background: #eef3fa; border-left: 3px solid #183454; padding: 5px 10px; margin: 16px 0 10px; border-radius: 0 4px 4px 0; }
+  .row { display: flex; gap: 16px; margin-bottom: 10px; }
+  .field { flex: 1; }
+  .field.full { flex: 2; }
+  .label { font-size: 9px; text-transform: uppercase; color: #888; letter-spacing: 0.6px; margin-bottom: 3px; font-weight: 700; }
+  .value { font-size: 13px; border-bottom: 1px solid #bbb; padding: 4px 2px 5px; min-height: 24px; color: #111; }
+  .value.tall { min-height: 50px; border: 1px solid #bbb; border-radius: 4px; padding: 8px; }
+  .sig-row { display: flex; gap: 50px; margin-top: 56px; }
+  .sig { flex: 1; text-align: center; border-top: 1px solid #444; padding-top: 8px; font-size: 11px; color: #555; }
+  .footer { margin-top: 28px; text-align: center; font-size: 10px; color: #aaa; border-top: 1px dashed #ddd; padding-top: 10px; }
+  @media print {
+    body { margin: 10mm; }
+    @page { margin: 15mm; }
+  }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Cartório de Registro Civil e PJ — Chapecó/SC</h1>
+  <div class="subtitle">Av. Getúlio Vargas, 321-O — Centro — Chapecó/SC</div>
+  <div class="doc-title">Protocolo de Entrada</div>
+</div>
+
+<div class="section-title">Identificação do Documento</div>
+<div class="row">
+  <div class="field">
+    <div class="label">Serviço / Aba</div>
+    <div class="value">${card.aba||''}</div>
+  </div>
+  <div class="field">
+    <div class="label">Data de Entrada</div>
+    <div class="value">${card.data_entrada||dataBr}</div>
+  </div>
+  <div class="field">
+    <div class="label">Tipo de Ato</div>
+    <div class="value">${card.tipo||''}</div>
+  </div>
+</div>
+<div class="row">
+  <div class="field full">
+    <div class="label">Número do Registro Primitivo</div>
+    <div class="value">${card.registro_primitivo||''}</div>
+  </div>
+  <div class="field">
+    <div class="label">Prioridade</div>
+    <div class="value">${card.priority||'Normal'}</div>
+  </div>
+</div>
+
+<div class="section-title">Descrição / Partes Envolvidas</div>
+<div style="border:1px solid #bbb;border-radius:4px;padding:10px;min-height:60px;font-size:13px;line-height:1.5">${card.descricao||''}</div>
+
+<div class="section-title">Atendimento</div>
+<div class="row">
+  <div class="field">
+    <div class="label">Recebido por</div>
+    <div class="value">${card.recebido||''}</div>
+  </div>
+  <div class="field">
+    <div class="label">Apresentado por</div>
+    <div class="value">${card.apresentado_por||''}</div>
+  </div>
+  <div class="field">
+    <div class="label">Telefone</div>
+    <div class="value">${card.telefone||''}</div>
+  </div>
+</div>
+
+<div class="section-title">Pagamento</div>
+<div class="row">
+  <div class="field">
+    <div class="label">Status</div>
+    <div class="value">${card.pago||'Não informado'}</div>
+  </div>
+  <div class="field">
+    <div class="label">Forma de Pagamento</div>
+    <div class="value">${card.forma_pagamento||''}</div>
+  </div>
+  <div class="field">
+    <div class="label">Situação</div>
+    <div class="value">${card.situacao||''}</div>
+  </div>
+</div>
+
+${card.observacoes ? `<div class="section-title">Observações</div>
+<div style="border:1px solid #bbb;border-radius:4px;padding:10px;min-height:36px;font-size:13px;line-height:1.5">${card.observacoes}</div>` : ''}
+
+<div class="sig-row">
+  <div class="sig">Responsável pelo Atendimento</div>
+  <div class="sig">Apresentante / Representante</div>
+</div>
+
+<div class="footer">
+  Cartório de Registro Civil e PJ — Chapecó/SC &nbsp;·&nbsp; Emitido em ${dataBr} &nbsp;·&nbsp; Protocolo interno
+</div>
+</body>
+</html>`;
+  const win = window.open('', '_blank', 'width=860,height=700');
+  if (!win) { showToast('⚠ Permita pop-ups para imprimir.'); return; }
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+  win.addEventListener('load', () => win.print());
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1414,20 +1393,13 @@ async function addCard() {
 // ═══════════════════════════════════════════════════════
 function exportBackup() {
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const data = {
-    exportedAt: new Date().toISOString(),
-    databaseUrl: activeDbUrl,
-    total: cards.length,
-    cards
-  };
+  const data = { exportedAt: new Date().toISOString(), databaseUrl: activeDbUrl, total: cards.length, cards };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = `cartorio-kanban-backup-${stamp}.json`;
-  document.body.appendChild(a);
-  a.click();
-  URL.revokeObjectURL(a.href);
-  a.remove();
+  document.body.appendChild(a); a.click();
+  URL.revokeObjectURL(a.href); a.remove();
   showToast('Backup gerado neste computador.');
 }
 function renderHistory(id) {
@@ -1480,19 +1452,8 @@ function showReport() {
   const situationRows = tableRowsFromMap(countBy(cards, c => c.situacao || 'Sem situação'), 8);
   const paymentRows = tableRowsFromMap(countBy(cards, c => paymentState(c) || 'Não informado'), 8);
   const methodRows = tableRowsFromMap(countBy(cards.filter(c => c.forma_pagamento), c => c.forma_pagamento), 8);
-  const staleRows = openCards
-    .map(c => ({ ...c, openDays: daysOpen(c) }))
-    .filter(c => c.openDays >= 30)
-    .sort((a,b) => b.openDays - a.openDays)
-    .slice(0, 20)
-    .map(c => `<tr><td>${c.openDays}d</td><td>${esc(c.situacao)}</td><td>${esc(c.recebido || '')}</td><td>${esc(paymentState(c) || 'N/I')}</td><td>${esc((c.descricao || '').slice(0, 90))}</td></tr>`)
-    .join('');
-  const unpaidRows = cards
-    .filter(c => (paymentState(c) === 'Não' || !paymentState(c)) && !['Arquivado'].includes(c.situacao))
-    .sort(compareCards)
-    .slice(0, 20)
-    .map(c => `<tr><td>${esc(c.situacao || '')}</td><td>${esc(c.recebido || '')}</td><td>${esc(c.registro_primitivo || '')}</td><td>${esc((c.descricao || '').slice(0, 90))}</td></tr>`)
-    .join('');
+  const staleRows = openCards.map(c => ({ ...c, openDays: daysOpen(c) })).filter(c => c.openDays >= 30).sort((a,b) => b.openDays - a.openDays).slice(0, 20).map(c => `<tr><td>${c.openDays}d</td><td>${esc(c.situacao)}</td><td>${esc(c.recebido || '')}</td><td>${esc(paymentState(c) || 'N/I')}</td><td>${esc((c.descricao || '').slice(0, 90))}</td></tr>`).join('');
+  const unpaidRows = cards.filter(c => (paymentState(c) === 'Não' || !paymentState(c)) && !['Arquivado'].includes(c.situacao)).sort(compareCards).slice(0, 20).map(c => `<tr><td>${esc(c.situacao || '')}</td><td>${esc(c.recebido || '')}</td><td>${esc(c.registro_primitivo || '')}</td><td>${esc((c.descricao || '').slice(0, 90))}</td></tr>`).join('');
   showModal('Relatório', `
     <div class="fgrid">
       <div class="field"><label>Documentos abertos</label><div class="ro">${openCards.length}</div></div>
@@ -1523,7 +1484,7 @@ function exportCsv() {
     ['situacao','Situação'], ['priority','Prioridade'], ['aba','Serviço'],
     ['data_entrada','Entrada'], ['prazo','Prazo'], ['protocolo','Protocolo'],
     ['descricao','Descrição'], ['recebido','Recebido por'], ['apresentado_por','Apresentado por'],
-    ['telefone','Telefone'], ['cnpj','CPF/CNPJ'], ['registro_primitivo','Registro primitivo'],
+    ['telefone','Telefone'], ['registro_primitivo','Registro primitivo'],
     ['pago','Pago'], ['forma_pagamento','Forma de pagamento'], ['observacoes','Observações'],
     ['data_conclusao','Conclusão'], ['data_nd','Nota devolutiva'], ['data_retorno','Retorno'],
     ['data_retirada','Retirada'], ['nome_retirou','Quem retirou']
@@ -1535,14 +1496,12 @@ function exportCsv() {
     fields.map(([, label]) => csvCell(label)).join(';'),
     ...selected.map(c => fields.map(([key]) => csvCell(c[key])).join(';'))
   ];
-  const blob = new Blob(['\ufeff' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const blob = new Blob(['﻿' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = `cartorio-kanban-${new Date().toISOString().slice(0,10)}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  URL.revokeObjectURL(a.href);
-  a.remove();
+  document.body.appendChild(a); a.click();
+  URL.revokeObjectURL(a.href); a.remove();
   showToast(`${selected.length} documentos exportados em CSV.`);
 }
 function esc(s) {
@@ -1559,4 +1518,3 @@ function showToast(msg) {
 </script>
 </body>
 </html>
-
