@@ -1026,6 +1026,10 @@ function openEdit(id) {
         </select>
       </div>
       <div class="field">
+        <label>Valor R$</label>
+        <input type="text" id="e_valor" value="${esc(c.valor||'')}" placeholder="Ex: 150,00" style="max-width:140px">
+      </div>
+      <div class="field">
         <label>Forma de Pagamento</label>
         <input type="text" id="e_forma_pagamento" value="${esc(c.forma_pagamento||'')}" placeholder="Pix, dinheiro, cartão...">
       </div>
@@ -1122,6 +1126,7 @@ async function saveEdit() {
   c.situacao        = document.getElementById('e_sit').value;
   c.priority        = document.getElementById('e_prio').value;
   c.registro_primitivo = document.getElementById('e_registro_primitivo').value.trim();
+  c.valor           = document.getElementById('e_valor')?.value.trim()||'';
   c.pago            = document.getElementById('e_pago').value;
   c.forma_pagamento = document.getElementById('e_forma_pagamento').value.trim();
   c.observacoes     = document.getElementById('e_obs').value.trim();
@@ -1219,7 +1224,7 @@ function openAdd(situacao) {
       </div>
       <div class="field">
         <label>Valor R$</label>
-        <input type="text" id="n_valor" placeholder="Ex: 150,00">
+        <input type="text" id="n_valor" placeholder="Ex: 150,00" style="max-width:140px">
       </div>
       <div class="field">
         <label>Forma de Pagamento</label>
