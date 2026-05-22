@@ -1220,6 +1220,7 @@ function openAdd(situacao) {
         <label>Descrição / Partes <span class="req">*</span></label>
         <textarea id="n_desc" placeholder="Descreva o documento ou partes envolvidas..." style="min-height:90px"></textarea>
       </div>
+      <div class="field s2"><label>CNPJ / CPF *</label><input type="text" id="n_cnpj" required placeholder="Informe o CNPJ ou CPF"></div>
       <div class="field">
         <label>Aba / Serviço <span class="req">*</span></label>
         <select id="n_aba">${ABAS.map(a=>`<option value="${a}">${a}</option>`).join('')}<option value="Outro">Outro</option></select>
