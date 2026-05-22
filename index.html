@@ -106,6 +106,11 @@
   .col-body::-webkit-scrollbar-thumb { background: #c8d0e0; border-radius: 2px; }
   .col-body.drag-over { background: rgba(37,99,235,0.06); border-radius: 8px; outline: 2px dashed #93c5fd; outline-offset: -3px; }
   .col-empty { text-align: center; color: #94a3b8; font-size: 13px; padding: 30px 0; font-style: italic; }
+  .archive-all-btn { display:block; margin:6px 9px 2px; padding:7px 10px;
+    background:transparent; color:#64748b; border:1.5px dashed #94a3b8; border-radius:8px;
+    font-size:12px; font-weight:600; cursor:pointer; text-align:center; transition:all 0.15s; flex-shrink:0; }
+  .archive-all-btn:hover { background:rgba(148,163,184,0.12); border-color:#64748b; color:#334155; }
+  .column.collapsed .archive-all-btn { display:none; }
   .add-btn { margin: 6px 9px 9px; padding: 8px; background: transparent; border: 1.5px dashed #b0bdd0; border-radius: 8px; color: #64748b; font-size: 13px; cursor: pointer; transition: all 0.15s; text-align: center; flex-shrink: 0; }
   .add-btn:hover { border-color: #3b82f6; color: #2563eb; background: rgba(37,99,235,0.04); }
 
@@ -855,11 +860,30 @@ function renderBoard() {
            ondragleave="dLeave(event)" ondrop="dDrop(event,'${col.id}')">
         ${cc.length ? cc.map(c => renderCard(c, col.id === 'Arquivado')).join('') : '<div class="col-empty">Nenhum documento nesta coluna</div>'}
       </div>
+      ${col.id === 'Concluído' ? `<button class="archive-all-btn" onclick="arquivarConcluidos()" title="Move para Arquivado todos com Data Retirada preenchida">📦 Arquivar documentos retirados</button>` : ''}
       ${col.id === 'Arquivado' ? '' : `<button class="add-btn" onclick="openAdd('${col.id}')">+ Adicionar documento</button>`}`;
     board.appendChild(d);
   });
 }
 function eid(s) { return s.replace(/[^a-zA-Z0-9]/g,'_'); }
+
+async function arquivarConcluidos() {
+  const elegiveis = cards.filter(c => c.situacao === 'Concluído' && c.data_retirada);
+  if (!elegiveis.length) {
+    showToast('⚠ Nenhum documento em Concluído com Data Retirada preenchida.');
+    return;
+  }
+  if (!confirm(`Arquivar ${elegiveis.length} documento(s) com Data Retirada preenchida?\nEsta ação move todos para a coluna Arquivado.`)) return;
+  let ok = 0;
+  for (const c of elegiveis) {
+    c.situacao = 'Arquivado';
+    const isNew = c.id.startsWith('usr_');
+    const saved = await saveItem(isNew ? 'newCards' : 'overrides', buildPayload(c, isNew), null);
+    if (saved) ok++;
+  }
+  showToast(`📦 ${ok} documento(s) arquivado(s) com sucesso`);
+  renderBoard();
+}
 function toggleColumn(id) {
   if (collapsedCols.has(id)) collapsedCols.delete(id);
   else collapsedCols.add(id);
@@ -1146,7 +1170,18 @@ async function saveEdit() {
   closeModal();
   const isNew = c.id.startsWith('usr_');
   const ok = await saveItem(isNew ? 'newCards' : 'overrides', buildPayload(c, isNew), before);
-  if (ok) showToast('✓ Atualizado e sincronizado para todos');
+  if (ok) {
+    showToast('✓ Atualizado e sincronizado para todos');
+    // Propor arquivamento se data_retirada + data_conclusao preenchidos e ainda nao arquivado
+    if (c.data_retirada && c.data_conclusao && c.situacao !== 'Arquivado') {
+      if (confirm('Data de Retirada e Data de Conclusão estão preenchidas.\nDeseja Arquivar este documento agora?')) {
+        c.situacao = 'Arquivado';
+        await saveItem(isNew ? 'newCards' : 'overrides', buildPayload(c, isNew), null);
+        showToast('📦 Documento arquivado com sucesso');
+        renderBoard();
+      }
+    }
+  }
 }
 
 function buildPayload(c, isNew) {
