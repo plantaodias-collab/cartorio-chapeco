@@ -1413,4 +1413,141 @@ td{border:1px solid #000;padding:3px 6px;vertical-align:middle;}
 ${card.observacoes?`<div style="border:1px solid #bbb;border-top:none;padding:4px 6px;font-size:10.5px"><strong>Obs:</strong> ${card.observacoes}</div>`:''}
 </div>
 <button class="print-btn" onclick="window.print()">🖨️ Imprimir</button>
-</body></html>`
+</body></html>`;
+  const win = window.open('', '_blank', 'width=860,height=700');
+  if (!win) { showToast('⚠ Permita pop-ups para imprimir.'); return; }
+  win.document.open();
+  win.document.write(printHtml);
+  win.document.close();
+}
+
+// ═══════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════
+function exportBackup() {
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const data = { exportedAt: new Date().toISOString(), databaseUrl: activeDbUrl, total: cards.length, cards };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `cartorio-kanban-backup-${stamp}.json`;
+  document.body.appendChild(a); a.click();
+  URL.revokeObjectURL(a.href); a.remove();
+  showToast('Backup gerado neste computador.');
+}
+function renderHistory(id) {
+  const rows = auditEntries
+    .filter(a => a && a.id === id)
+    .sort((a,b) => String(b.savedAt || '').localeCompare(String(a.savedAt || '')))
+    .slice(0, 6);
+  if (!rows.length) return '<div class="field s2"><label>Histórico</label><div class="ro">Nenhuma alteração registrada ainda.</div></div>';
+  return `<div class="field s2"><label>Histórico recente</label><div class="ro">${
+    rows.map(a => {
+      const when = a.savedAt ? new Date(a.savedAt).toLocaleString('pt-BR') : '';
+      const who = a.updatedBy ? ` por ${esc(a.updatedBy)}` : '';
+      const changes = Array.isArray(a.changes) && a.changes.length
+        ? a.changes.slice(0, 4).map(ch => `${esc(ch.label || ch.field)}: ${esc(ch.before || 'vazio')} -> ${esc(ch.after || 'vazio')}`).join('<br>')
+        : 'Registro salvo';
+      return `<div style="margin-bottom:10px"><strong>${esc(when)}${who}</strong><br>${changes}</div>`;
+    }).join('')
+  }</div></div>`;
+}
+function monthKey(v) {
+  const iso = toDateInput(v);
+  return iso ? iso.slice(0, 7) : '';
+}
+function countBy(items, getter) {
+  const map = new Map();
+  items.forEach(item => {
+    const key = getter(item) || 'Não informado';
+    map.set(key, (map.get(key) || 0) + 1);
+  });
+  return map;
+}
+function tableRowsFromMap(map, limit = 12) {
+  return [...map.entries()]
+    .sort((a,b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0]), 'pt-BR'))
+    .slice(0, limit)
+    .map(([name, total]) => `<tr><td>${esc(name)}</td><td style="text-align:right;font-weight:700">${total}</td></tr>`)
+    .join('');
+}
+function showReport() {
+  const filteredCards = cards.filter(c => vis.has(c.id));
+  const openCards = cards.filter(c => !['Concluído','Arquivado'].includes(c.situacao));
+  const avgOpen = openCards.length ? Math.round(openCards.reduce((sum, c) => sum + daysOpen(c), 0) / openCards.length) : 0;
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const concludedMonth = cards.filter(c => monthKey(c.data_conclusao) === currentMonth).length;
+  const paid = cards.filter(c => paymentState(c) === 'Sim').length;
+  const unpaid = cards.filter(c => paymentState(c) === 'Não' || !paymentState(c)).length;
+  const exempt = cards.filter(c => paymentState(c) === 'Isento').length;
+  const paidMonth = cards.filter(c => paymentState(c) === 'Sim' && monthKey(c.updatedAt || c.data_conclusao || c.data_entrada) === currentMonth).length;
+  const ownerRows = tableRowsFromMap(countBy(cards, c => (c.recebido || 'Sem responsável').trim() || 'Sem responsável'));
+  const situationRows = tableRowsFromMap(countBy(cards, c => c.situacao || 'Sem situação'), 8);
+  const paymentRows = tableRowsFromMap(countBy(cards, c => paymentState(c) || 'Não informado'), 8);
+  const methodRows = tableRowsFromMap(countBy(cards.filter(c => c.forma_pagamento), c => c.forma_pagamento), 8);
+  const staleRows = openCards.map(c => ({ ...c, openDays: daysOpen(c) })).filter(c => c.openDays >= 30).sort((a,b) => b.openDays - a.openDays).slice(0, 20).map(c => `<tr><td>${c.openDays}d</td><td>${esc(c.situacao)}</td><td>${esc(c.recebido || '')}</td><td>${esc(paymentState(c) || 'N/I')}</td><td>${esc((c.descricao || '').slice(0, 90))}</td></tr>`).join('');
+  const unpaidRows = cards.filter(c => (paymentState(c) === 'Não' || !paymentState(c)) && !['Arquivado'].includes(c.situacao)).sort(compareCards).slice(0, 20).map(c => `<tr><td>${esc(c.situacao || '')}</td><td>${esc(c.recebido || '')}</td><td>${esc(c.registro_primitivo || '')}</td><td>${esc((c.descricao || '').slice(0, 90))}</td></tr>`).join('');
+  showModal('Relatório', `
+    <div class="fgrid">
+      <div class="field"><label>Documentos abertos</label><div class="ro">${openCards.length}</div></div>
+      <div class="field"><label>Tempo médio em aberto</label><div class="ro">${avgOpen} dias</div></div>
+      <div class="field"><label>Concluídos no mês</label><div class="ro">${concludedMonth}</div></div>
+      <div class="field"><label>Total no painel</label><div class="ro">${cards.length}</div></div>
+      <div class="field"><label>Pagos</label><div class="ro">${paid}</div></div>
+      <div class="field"><label>Não pagos / sem informação</label><div class="ro">${unpaid}</div></div>
+      <div class="field"><label>Isentos</label><div class="ro">${exempt}</div></div>
+      <div class="field"><label>Pagos no mês</label><div class="ro">${paidMonth}</div></div>
+      <div class="field"><label>Filtrados na tela</label><div class="ro">${filteredCards.length}</div></div>
+      <div class="field"><label>Arquivados</label><div class="ro">${cards.filter(c => c.situacao === 'Arquivado').length}</div></div>
+      <div class="field s2"><label>Financeiro por status</label><div class="ro"><table style="width:100%;border-collapse:collapse">${paymentRows || '<tr><td>Nenhum dado</td></tr>'}</table></div></div>
+      <div class="field s2"><label>Formas de pagamento</label><div class="ro"><table style="width:100%;border-collapse:collapse">${methodRows || '<tr><td>Nenhuma forma informada</td></tr>'}</table></div></div>
+      <div class="field s2"><label>Por situação</label><div class="ro"><table style="width:100%;border-collapse:collapse">${situationRows || '<tr><td>Nenhum dado</td></tr>'}</table></div></div>
+      <div class="field s2"><label>Por responsável</label><div class="ro"><table style="width:100%;border-collapse:collapse">${ownerRows || '<tr><td>Nenhum dado</td></tr>'}</table></div></div>
+      <div class="field s2"><label>Pendências de cobrança</label><div class="ro"><table style="width:100%;border-collapse:collapse">${unpaidRows || '<tr><td>Nenhuma pendência aberta.</td></tr>'}</table></div></div>
+      <div class="field s2"><label>Parados há 30+ dias</label><div class="ro"><table style="width:100%;border-collapse:collapse">${staleRows || '<tr><td>Nenhum documento parado há 30+ dias.</td></tr>'}</table></div></div>
+    </div>`,
+    `<button class="btn btn-primary" onclick="closeModal()">Fechar</button>`
+  );
+}
+function csvCell(v) {
+  return `"${String(v ?? '').replace(/"/g, '""')}"`;
+}
+function exportCsv() {
+  const fields = [
+    ['situacao','Situação'], ['priority','Prioridade'], ['aba','Serviço'],
+    ['data_entrada','Entrada'], ['prazo','Prazo'], ['protocolo','Protocolo'],
+    ['descricao','Descrição'], ['recebido','Recebido por'], ['apresentado_por','Apresentado por'],
+    ['telefone','Telefone'], ['registro_primitivo','Registro primitivo'],
+    ['pago','Pago'], ['forma_pagamento','Forma de pagamento'], ['observacoes','Observações'],
+    ['data_conclusao','Conclusão'], ['data_nd','Nota devolutiva'], ['data_retorno','Retorno'],
+    ['data_retirada','Retirada'], ['nome_retirou','Quem retirou']
+  ];
+  const selected = cards.filter(c => vis.has(c.id)).sort((a,b) =>
+    String(a.situacao || '').localeCompare(String(b.situacao || ''), 'pt-BR') || compareCards(a,b)
+  );
+  const rows = [
+    fields.map(([, label]) => csvCell(label)).join(';'),
+    ...selected.map(c => fields.map(([key]) => csvCell(c[key])).join(';'))
+  ];
+  const blob = new Blob(['﻿' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `cartorio-kanban-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click();
+  URL.revokeObjectURL(a.href); a.remove();
+  showToast(`${selected.length} documentos exportados em CSV.`);
+}
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escAttr(s) {
+  return esc(s).replace(/'/g,'&#39;');
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>
