@@ -611,12 +611,12 @@ function openAdd(situacao) {
     <div class="fgrid">
       <div class="fsec">Identificação</div>
       <div class="field s2"><label>Descrição / Partes *</label><textarea id="n_desc" placeholder="Descreva o documento ou partes envolvidas..."></textarea></div>
+      <div class="field s2"><label>CNPJ / CPF *</label><input id="n_cnpj" required placeholder="Informe o CNPJ ou CPF"></div>
       <div class="field"><label>Aba / Serviço *</label>
         <select id="n_aba">${ABAS.map(a=>`<option value="${a}">${a}</option>`).join('')}<option value="Outro">Outro</option></select>
       </div>
       <div class="field"><label>Nº Protocolo</label><input id="n_prot" placeholder="Nº Protocolo"></div>
       <div class="field"><label>Tipo de Ato</label><input id="n_tipo" placeholder="Ex: 1º Registro de Estatuto"></div>
-      <div class="field"><label>CNPJ / CPF</label><input id="n_cnpj"></div>
 
       <div class="fsec">Atendimento</div>
       <div class="field"><label>Recebido por</label><input id="n_recv" placeholder="Nome do atendente"></div>
@@ -640,13 +640,19 @@ function openAdd(situacao) {
 async function addCard() {
   const desc = document.getElementById('n_desc').value.trim();
   if (!desc) { showToast('⚠ Informe a descrição'); return; }
+  const cnpj = document.getElementById('n_cnpj').value.trim();
+  if (!cnpj) {
+    document.getElementById('n_cnpj').focus();
+    showToast('⚠ Informe o CNPJ ou CPF');
+    return;
+  }
   const nc = {
     id: 'usr_' + Date.now(),
     protocolo: document.getElementById('n_prot').value.trim() || '',
     data_entrada: new Date().toISOString().slice(0,10),
     tipo: document.getElementById('n_tipo').value.trim(),
     descricao: desc,
-    cnpj: document.getElementById('n_cnpj').value.trim(),
+    cnpj: cnpj,
     recebido: document.getElementById('n_recv').value.trim(),
     apresentado_por: document.getElementById('n_apres').value.trim(),
     telefone: document.getElementById('n_tel').value.trim(),
