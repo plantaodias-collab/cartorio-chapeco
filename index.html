@@ -217,6 +217,21 @@
   .security-note.show { display: block; }
   .operator-input { width: 138px; }
 
+
+  /* Campo obrigatório não preenchido */
+  .field-required-error input,
+  .field-required-error select {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 3px rgba(239,68,68,0.15) !important;
+    animation: shake 0.35s cubic-bezier(0.36,0.07,0.19,0.97);
+  }
+  @keyframes shake {
+    10%, 90% { transform: translateX(-2px); }
+    20%, 80% { transform: translateX(3px);  }
+    30%, 50%, 70% { transform: translateX(-3px); }
+    40%, 60% { transform: translateX(3px);  }
+  }
+
   /* ── Print offer modal ── */
   .print-offer-body { text-align: center; padding: 28px 20px 10px; }
   .print-offer-body .offer-icon { font-size: 52px; margin-bottom: 14px; }
@@ -1239,8 +1254,28 @@ function openAdd(situacao) {
 }
 
 async function addCard() {
+  // Limpar erros anteriores
+  ['n_desc','n_recv','n_apres','n_tel','n_pago','n_forma_pagamento'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.closest('.field')?.classList.remove('field-required-error');
+  });
+
+  // Validar campos obrigatórios
+  const required = [
+    { id: 'n_desc',             label: 'Descrição / Partes' },
+    { id: 'n_recv',             label: 'Recebido por' },
+    { id: 'n_apres',            label: 'Apresentado por' },
+    { id: 'n_tel',              label: 'Telefone' },
+    { id: 'n_pago',             label: 'Pagamento' },
+    { id: 'n_forma_pagamento',  label: 'Forma de Pagamento' },
+  ];
+  const missing = required.filter(f => !document.getElementById(f.id)?.value.trim());
+  if (missing.length) {
+    missing.forEach(f => document.getElementById(f.id)?.closest('.field')?.classList.add('field-required-error'));
+    showToast('⚠ Preencha: ' + missing.map(f => f.label).join(', '));
+    return;
+  }
   const desc = document.getElementById('n_desc').value.trim();
-  if (!desc) { showToast('⚠ Informe a descrição'); return; }
   const nc = {
     id:              'usr_' + Date.now(),
     protocolo:       '',
