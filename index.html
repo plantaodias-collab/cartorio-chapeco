@@ -47,6 +47,14 @@
   .login-input { width: 100%; border: 1.5px solid #d1d9e8; border-radius: 8px; padding: 10px 13px; font-size: 14px; outline: none; color: #1e293b; margin-bottom: 10px; }
   .login-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
   .login-error { display: none; color: #b91c1c; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 6px; padding: 8px 10px; font-size: 12px; margin-bottom: 10px; }
+  .operator-gate { position: fixed; inset: 0; z-index: 900; display: none; align-items: center; justify-content: center; padding: 20px; background: rgba(15,23,42,0.58); backdrop-filter: blur(8px); }
+  .operator-gate.open { display: flex; }
+  .operator-card { width: 430px; max-width: 100%; background: #fff; border: 1px solid #dbe3ef; border-radius: 12px; padding: 24px; box-shadow: 0 24px 70px rgba(15,23,42,0.24); }
+  .operator-card h2 { font-size: 18px; font-weight: 850; color: #0f1f35; margin-bottom: 6px; }
+  .operator-card p { font-size: 13px; line-height: 1.55; color: #64748b; margin-bottom: 14px; }
+  .operator-card input { width: 100%; height: 40px; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 0 12px; font-size: 14px; outline: none; margin-bottom: 10px; }
+  .operator-card input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.13); }
+  .operator-error { display: none; margin-bottom: 10px; padding: 8px 10px; border-radius: 7px; background: #fff1f2; border: 1px solid #fecdd3; color: #be123c; font-size: 12px; font-weight: 700; }
 
   /* ── Header ── */
   header { background: #183454; padding: 13px 22px 11px; display: flex; flex-direction: column; gap: 9px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(15,23,42,0.22); }
@@ -349,8 +357,87 @@
   body.focus-mode .primary-actions .btn-ghost:not(.focus-keep), body.focus-mode .primary-actions #logoutBtn, body.focus-mode .primary-actions .btn-sm { display: none; }
   body.focus-mode .board { min-height: calc(100vh - 76px); padding-top: 14px; }
   body.focus-mode .column { max-height: calc(100vh - 96px); }
+  .filter-group { display: flex; align-items: center; gap: 6px; padding: 5px; border: 1px solid rgba(148,163,184,0.28); border-radius: 10px; background: rgba(255,255,255,0.08); }
+  .filter-label { color: #b8d2f2; font-size: 10px; font-weight: 800; letter-spacing: 0.7px; text-transform: uppercase; padding: 0 3px; }
+  .filter-group select { flex: 0 1 148px; min-width: 118px; max-width: 178px; }
+  body.ata-mode header { background: linear-gradient(180deg, #123527 0%, #10281f 100%); }
+  body.ata-mode .brand h1::after { content: ' - Controle de Atas'; color: #bbf7d0; font-weight: 700; }
+  body.ata-mode .stats-bar { border-bottom-color: #bbf7d0; }
+  .card.card-ata { border-color: #b7dec7; }
+  .card.card-ata::before { background: #16a34a; }
+  .card.card-ata .card-aba { color: #166534; }
+  .ata-pending-chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 8px; position: relative; z-index: 1; }
+  .ata-chip { border-radius: 999px; border: 1px solid #e2e8f0; padding: 2px 7px; font-size: 10px; font-weight: 800; line-height: 1.5; color: #475569; background: #f8fafc; }
+  .ata-chip.warn { background: #fff7ed; border-color: #fed7aa; color: #9a3412; }
+  .ata-chip.danger { background: #fff1f2; border-color: #fecdd3; color: #be123c; }
+  .ata-chip.info { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+  .ata-chip.money { background: #fefce8; border-color: #fde68a; color: #854d0e; }
+  .report-metrics { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+  .report-card { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px; box-shadow: var(--shadow-sm); }
+  .report-card .rlabel { color: #64748b; font-size: 10px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; }
+  .report-card .rvalue { margin-top: 4px; color: #0f1f35; font-size: 22px; font-weight: 850; }
+  .report-card.ata { border-color: #bbf7d0; background: #f7fef9; }
+  .report-card.warn { border-color: #fed7aa; background: #fffaf3; }
+  .compact-report-field { display: none; }
+  @keyframes boardFadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes cardRise {
+    from { opacity: 0; transform: translateY(10px) scale(0.985); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes chipPop {
+    0% { opacity: 0; transform: scale(0.86); }
+    70% { opacity: 1; transform: scale(1.04); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  @keyframes livePulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(22,101,52,0.18); }
+    50% { box-shadow: 0 0 0 5px rgba(22,101,52,0); }
+  }
+  @keyframes dropGlow {
+    from { box-shadow: 0 0 0 0 rgba(37,99,235,0.2), var(--shadow-sm); }
+    to { box-shadow: 0 0 0 8px rgba(37,99,235,0), var(--shadow-sm); }
+  }
+  .board { animation: boardFadeIn 0.28s ease-out both; }
+  .column { animation: boardFadeIn 0.32s ease-out both; }
+  .column:nth-child(2) { animation-delay: 0.03s; }
+  .column:nth-child(3) { animation-delay: 0.06s; }
+  .column:nth-child(4) { animation-delay: 0.09s; }
+  .column:nth-child(5) { animation-delay: 0.12s; }
+  .card { min-height: 58px; animation: cardRise 0.22s ease-out both; }
+  .card:nth-child(2n) { animation-delay: 0.015s; }
+  .card:nth-child(3n) { animation-delay: 0.03s; }
+  .card:nth-child(5n) { animation-delay: 0.045s; }
+  .card:not(.archived-compact) { padding: 13px 13px 12px 16px; border-radius: 11px; }
+  .card:not(.archived-compact) .card-desc { -webkit-line-clamp: 3; min-height: 18px; font-size: 13.5px; }
+  .card:not(.archived-compact):hover { transform: translateY(-3px) scale(1.008); }
+  .card.saved-pulse { animation: dropGlow 0.62s ease-out both; }
+  .card-badges { row-gap: 5px; }
+  .pchip, .paychip, .cm, .pz { box-shadow: 0 1px 0 rgba(255,255,255,0.65) inset; }
+  .ata-chip { animation: chipPop 0.18s ease-out both; }
+  .ata-chip:nth-child(2) { animation-delay: 0.03s; }
+  .ata-chip:nth-child(3) { animation-delay: 0.06s; }
+  .ata-chip:nth-child(4) { animation-delay: 0.09s; }
+  .sync-bar.ok::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #16a34a; margin-right: 6px; animation: livePulse 1.8s ease-out infinite; }
+  .col-body.drag-over { background: rgba(37,99,235,0.08); outline-color: #60a5fa; transition: background 0.16s ease, outline-color 0.16s ease; }
+  .column:hover { box-shadow: 0 1px 0 rgba(255,255,255,0.9) inset, 0 12px 28px rgba(15,23,42,0.09); }
+  .stat-pill[onclick] { cursor: pointer; }
+  .stat-pill[onclick]:active, .btn:active, .btn-sm:active, .col-toggle:active { transform: translateY(0) scale(0.98); }
+  .btn-primary { position: relative; overflow: hidden; }
+  .btn-primary::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.26), transparent); transform: translateX(-120%); transition: transform 0.42s ease; }
+  .btn-primary:hover::after { transform: translateX(120%); }
+  body.operator-missing .card { cursor: not-allowed; }
+  body.operator-missing .add-btn,
+  body.operator-missing .archive-all-btn { opacity: 0.58; cursor: not-allowed; }
+  body.operator-missing #operatorName { border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245,158,11,0.18); }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
+  }
   @media (max-width: 1500px) { .header-filters select { flex-basis: 120px; } }
   @media (max-width: 760px) { body { font-size: 13px; } header { padding: 10px; align-items: stretch; } .brand { width: 100%; } .brand h1 { font-size: 15px; } .brand p { font-size: 11px; } .controls { width: 100%; gap: 6px; grid-template-columns: 1fr 1fr; } .controls input, .controls select { flex: 1 1 150px; min-width: 0; } #searchInput { width: auto; flex-basis: 100%; grid-column: 1 / -1; } .primary-actions { position: sticky; bottom: 0; z-index: 150; width: 100%; background: #1e3a5f; padding-top: 6px; } .primary-actions .btn { flex: 1 1 auto; padding: 0 10px; } .stats-bar { padding: 8px 10px; } .board { padding: 12px 10px 90px; gap: 10px; scroll-snap-type: x mandatory; min-height: calc(100vh - 250px); } .column { width: calc(100vw - 32px); min-width: calc(100vw - 32px); max-height: calc(100vh - 285px); scroll-snap-align: start; } .modal { max-height: 94vh; } .fgrid { grid-template-columns: 1fr; } .fgrid .s2 { grid-column: auto; } }
+  @media (max-width: 760px) { .filter-group { width: 100%; flex-wrap: wrap; } .filter-group select { flex: 1 1 130px; max-width: none; } .filter-label { width: 100%; } .report-metrics { grid-template-columns: 1fr 1fr; } }
 </style>
 </head>
 <body>
@@ -402,6 +489,16 @@
 </div>
 
 <!-- ══ LOADING ════════════════════════════════════════════ -->
+<div id="operator-gate" class="operator-gate">
+  <div class="operator-card">
+    <h2>Identifique o operador</h2>
+    <p>Informe seu nome antes de usar o painel. Esse nome sera gravado no historico das proximas alteracoes feitas neste computador.</p>
+    <input id="operatorGateName" type="text" placeholder="Nome de quem esta usando" autocomplete="name" onkeydown="if(event.key==='Enter') confirmOperatorName()">
+    <div class="operator-error" id="operatorGateError">Informe ao menos 3 caracteres.</div>
+    <button class="setup-btn" onclick="confirmOperatorName()">Continuar</button>
+  </div>
+</div>
+
 <div id="loading" class="hidden">
   <div class="spin"></div>
   <p id="loadingMsg">Conectando ao banco compartilhado...</p>
@@ -425,13 +522,25 @@
   </div>
   <!-- Linha 2: filtros + ações -->
   <div class="header-filters">
+    <div class="filter-group">
+      <span class="filter-label">Triagem</span>
     <select id="fPrio" onchange="applyFilters()">
       <option value="">Prioridade</option>
       <option value="Alta">Alta</option>
       <option value="Média">Média</option>
       <option value="Normal">Normal</option>
     </select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Fluxo</span>
     <select id="fAba"  onchange="applyFilters()"><option value="">Serviço / Aba</option></select>
+    <select id="fTipo" onchange="applyFilters()">
+      <option value="">Tipo</option>
+      <option value="atas">Atas</option>
+    </select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Equipe</span>
     <select id="fRecv" onchange="applyFilters()"><option value="">Responsável</option></select>
     <select id="fSit"  onchange="applyFilters()">
       <option value="">Todas as situações</option>
@@ -449,6 +558,7 @@
       <option value="__blank">Não informado</option>
     </select>
     <select id="colJump" onchange="jumpColumn(this.value)"><option value="">Ir para coluna</option></select>
+    </div>
     <div class="filter-actions primary-actions">
       <button class="btn btn-ghost"   onclick="resetFilters()">Limpar</button>
       <button class="btn btn-ghost"   onclick="showReport()">Relatório</button>
@@ -565,6 +675,32 @@ function paymentMatchesQuery(c, q) {
   if (['nao informado', 'não informado', 'sem pagamento'].includes(q)) return !paid;
   return paid && normalizeText(paid).includes(q) || forma.includes(q);
 }
+function isAta(c) {
+  return normalizeText(c.aba).includes('atas') || normalizeText(c.tipo).includes('ata');
+}
+function pendingReason(c) {
+  const reasons = [];
+  if (needsAttention(c)) reasons.push('prazo/atencao');
+  if (['Nota Devolutiva','Aguard. Retorno ND'].includes(c.situacao)) reasons.push('ND/retorno');
+  if (!c.telefone) reasons.push('sem telefone');
+  if (!c.apresentado_por) reasons.push('sem apresentante');
+  if (!c.recebido) reasons.push('sem responsavel');
+  if ((paymentState(c) === 'Não' || !paymentState(c)) && c.situacao !== 'Arquivado') reasons.push('pagamento');
+  return reasons.join(', ') || 'acompanhar';
+}
+function hasPendingIssue(c) {
+  return pendingReason(c) !== 'acompanhar';
+}
+function pendingItems(c) {
+  const items = [];
+  if (needsAttention(c)) items.push({ label: daysOpen(c) >= 30 ? '30+ dias' : 'Prazo', tone: 'danger' });
+  if (['Nota Devolutiva','Aguard. Retorno ND'].includes(c.situacao)) items.push({ label: 'ND/Retorno', tone: 'warn' });
+  if (!c.telefone) items.push({ label: 'Sem telefone', tone: 'info' });
+  if (!c.apresentado_por) items.push({ label: 'Sem apresentante', tone: 'info' });
+  if (!c.recebido) items.push({ label: 'Sem responsavel', tone: 'info' });
+  if ((paymentState(c) === 'Não' || !paymentState(c)) && c.situacao !== 'Arquivado') items.push({ label: 'Pagamento', tone: 'money' });
+  return items;
+}
 function daysOpen(c) {
   if (['Concluído','Arquivado'].includes(c.situacao)) return 0;
   const start = parseDateValue(c.data_entrada);
@@ -614,9 +750,64 @@ function showSetup() {
 }
 function initOperatorName() {
   document.getElementById('operatorName').value = localStorage.getItem(OPERATOR_KEY) || '';
+  syncOperatorState();
 }
 function saveOperatorName() {
-  localStorage.setItem(OPERATOR_KEY, document.getElementById('operatorName').value.trim());
+  const name = document.getElementById('operatorName').value.trim();
+  if (name) localStorage.setItem(OPERATOR_KEY, name);
+  else localStorage.removeItem(OPERATOR_KEY);
+  syncOperatorState();
+  enforceOperatorName();
+  renderBoard();
+}
+function currentOperatorName() {
+  return (currentUser?.email || localStorage.getItem(OPERATOR_KEY) || document.getElementById('operatorName')?.value || '').trim();
+}
+function hasOperatorName() {
+  return !!currentOperatorName();
+}
+function enforceOperatorName() {
+  const name = currentOperatorName();
+  const gate = document.getElementById('operator-gate');
+  if (!gate) return !!name;
+  gate.classList.toggle('open', !name);
+  syncOperatorState();
+  if (!name) {
+    const input = document.getElementById('operatorGateName');
+    input.value = document.getElementById('operatorName').value.trim();
+    setTimeout(() => input.focus(), 40);
+  }
+  return !!name;
+}
+function syncOperatorState() {
+  const identified = hasOperatorName();
+  document.body.classList.toggle('operator-missing', !identified);
+  return identified;
+}
+function confirmOperatorName() {
+  const input = document.getElementById('operatorGateName');
+  const err = document.getElementById('operatorGateError');
+  const name = input.value.trim().replace(/\s+/g, ' ');
+  if (name.length < 3) {
+    err.style.display = 'block';
+    input.focus();
+    return false;
+  }
+  err.style.display = 'none';
+  localStorage.setItem(OPERATOR_KEY, name);
+  document.getElementById('operatorName').value = name;
+  document.getElementById('operator-gate').classList.remove('open');
+  syncOperatorState();
+  renderBoard();
+  showToast('Operador identificado: ' + name);
+  return true;
+}
+function requireOperatorName() {
+  if (hasOperatorName()) return true;
+  enforceOperatorName();
+  syncOperatorState();
+  showToast('Informe seu nome para registrar as alteracoes.');
+  return false;
 }
 function setupFirebase() {
   const url = document.getElementById('firebaseUrl').value.trim();
@@ -699,6 +890,7 @@ function listenFirebase() {
     document.getElementById('loading').classList.add('hidden');
     document.getElementById('securityNote').classList.add('show');
     document.getElementById('logoutBtn').style.display = auth ? '' : 'none';
+    enforceOperatorName();
     setSyncStatus('ok', '🟢 Online — alterações salvas e visíveis para todos em tempo real');
   }, err => {
     document.getElementById('loading').classList.add('hidden');
@@ -720,12 +912,13 @@ function buildCards(data) {
 }
 async function saveItem(type, payload, before = null) {
   if (!db) { showToast('❌ Sem conexão.'); return false; }
+  if (!requireOperatorName()) return false;
   setSyncStatus('loading', '💾 Salvando...');
   try {
     const key = String(payload.id).replace(/[.#$[\]/]/g, '_');
     const savedAt = new Date().toISOString();
     payload.updatedAt = savedAt;
-    payload.updatedBy = currentUser?.email || localStorage.getItem(OPERATOR_KEY) || '';
+    payload.updatedBy = currentOperatorName();
     await db.ref(`${DB_PATH}/${type}/${key}`).set(payload);
     const changes = diffCards(before, payload);
     db.ref(`${DB_PATH}/audit/${Date.now()}_${key}`).set({
@@ -777,12 +970,14 @@ function applyFilters() {
   const qDigits = onlyDigits(rawQ);
   const prio = document.getElementById('fPrio').value;
   const aba  = document.getElementById('fAba').value;
+  const tipo = document.getElementById('fTipo').value;
   const recv = document.getElementById('fRecv').value;
   const sit  = document.getElementById('fSit').value;
   const pago = document.getElementById('fPago').value;
   vis = new Set(cards.filter(c => {
     if (prio && c.priority !== prio) return false;
     if (aba  && c.aba !== aba) return false;
+    if (tipo === 'atas' && !isAta(c)) return false;
     if (recv && (c.recebido||'').trim() !== recv) return false;
     if (sit  && c.situacao !== sit) return false;
     if (pago === '__blank' && paymentState(c)) return false;
@@ -795,11 +990,16 @@ function applyFilters() {
     }
     return true;
   }).map(c => c.id));
+  syncAtaMode();
   renderBoard(); renderStats();
 }
 function resetFilters() {
-  ['searchInput','fPrio','fAba','fRecv','fSit','fPago','colJump'].forEach(id => { document.getElementById(id).value = ''; });
+  ['searchInput','fPrio','fAba','fTipo','fRecv','fSit','fPago','colJump'].forEach(id => { document.getElementById(id).value = ''; });
   applyFilters();
+}
+function syncAtaMode() {
+  const isActive = document.getElementById('fTipo')?.value === 'atas';
+  document.body.classList.toggle('ata-mode', isActive);
 }
 function syncFocusMode() {
   document.body.classList.toggle('focus-mode', focusMode);
@@ -824,7 +1024,14 @@ function quickFilter(kind) {
     vis = new Set(cards.filter(c => ['Nota Devolutiva','Aguard. Retorno ND'].includes(c.situacao)).map(c => c.id));
   } else if (kind === 'open') {
     vis = new Set(cards.filter(c => !['Concluído','Arquivado'].includes(c.situacao)).map(c => c.id));
+  } else if (kind === 'atas') {
+    document.getElementById('fTipo').value = 'atas';
+    vis = new Set(cards.filter(isAta).map(c => c.id));
+  } else if (kind === 'atasPending') {
+    document.getElementById('fTipo').value = 'atas';
+    vis = new Set(cards.filter(c => isAta(c) && !['Concluído','Arquivado'].includes(c.situacao) && hasPendingIssue(c)).map(c => c.id));
   }
+  syncAtaMode();
   renderBoard(); renderStats();
 }
 function findLikelyDuplicate(candidate) {
@@ -866,8 +1073,17 @@ function renderBoard() {
   });
 }
 function eid(s) { return s.replace(/[^a-zA-Z0-9]/g,'_'); }
+function pulseCard(id) {
+  setTimeout(() => {
+    const el = document.getElementById('card-' + id);
+    if (!el) return;
+    el.classList.add('saved-pulse');
+    setTimeout(() => el.classList.remove('saved-pulse'), 700);
+  }, 30);
+}
 
 async function arquivarConcluidos() {
+  if (!requireOperatorName()) return;
   const elegiveis = cards.filter(c => c.situacao === 'Concluído' && c.data_retirada);
   if (!elegiveis.length) {
     showToast('⚠ Nenhum documento em Concluído com Data Retirada preenchida.');
@@ -895,6 +1111,10 @@ function renderCard(c, compact = false) {
   const pago = c.pago || '';
   const payClass = pago === 'Não' ? 'Nao' : (pago || 'NI');
   const payLabel = pago || 'N/I';
+  const ata = isAta(c);
+  const chips = ata && !['Concluído','Arquivado'].includes(c.situacao)
+    ? pendingItems(c).map(item => `<span class="ata-chip ${item.tone}">${esc(item.label)}</span>`).join('')
+    : '';
   const extra = [
     c.registro_primitivo ? `<div title="Registro primitivo">Registro: ${esc(c.registro_primitivo)}</div>` : '',
     c.forma_pagamento ? `<div title="Forma de pagamento">Pagamento: ${esc(c.forma_pagamento)}</div>` : ''
@@ -905,8 +1125,8 @@ function renderCard(c, compact = false) {
     pzEl = `<span class="${cls}">${c.prazo}d</span>`;
   }
   return `
-    <div class="card prio-${c.priority}${compact ? ' archived-compact' : ''}" id="card-${c.id}"
-         draggable="true" ondragstart="dStart(event,'${c.id}')" ondragend="dEnd()"
+    <div class="card prio-${c.priority}${ata ? ' card-ata' : ''}${compact ? ' archived-compact' : ''}" id="card-${c.id}"
+         draggable="${hasOperatorName() ? 'true' : 'false'}" ondragstart="dStart(event,'${c.id}')" ondragend="dEnd()"
          onclick="openEdit('${c.id}')">
       <div class="card-top">
         <div class="card-aba">${esc(c.aba)}</div>
@@ -916,6 +1136,7 @@ function renderCard(c, compact = false) {
         </div>
       </div>
       <div class="card-desc">${esc(desc)}</div>
+      ${chips ? `<div class="ata-pending-chips">${chips}</div>` : ''}
       ${extra ? `<div class="card-extra">${extra}</div>` : ''}
       <div class="card-meta">
         ${c.recebido        ? `<span class="cm cm-recv"  title="Recebido por">${esc(c.recebido)}</span>` : ''}
@@ -934,6 +1155,8 @@ function renderStats() {
   const attention = visibleCards.filter(needsAttention).length;
   const open = visibleCards.filter(c => !['Concluído','Arquivado'].includes(c.situacao)).length;
   const nd = visibleCards.filter(c => ['Nota Devolutiva','Aguard. Retorno ND'].includes(c.situacao)).length;
+  const atas = visibleCards.filter(isAta).length;
+  const atasPendentes = visibleCards.filter(c => isAta(c) && !['Concluído','Arquivado'].includes(c.situacao) && hasPendingIssue(c)).length;
   document.getElementById('statsBar').innerHTML =
     COLS.map(col => `<div class="stat-pill">
       <div class="sd" style="background:${col.color}"></div>${col.label}<span class="sc">${cnt[col.id]}</span>
@@ -946,6 +1169,12 @@ function renderStats() {
      </button>
      <button type="button" class="stat-pill" onclick="quickFilter('nd')" title="Filtrar notas devolutivas e retornos" style="cursor:pointer;border-color:#fed7aa;background:#fff7ed;color:#9a3412">
        <div class="sd" style="background:#f59e0b"></div>ND/Retorno<span class="sc" style="color:#9a3412">${nd}</span>
+     </button>
+     <button type="button" class="stat-pill" onclick="quickFilter('atas')" title="Filtrar somente atas" style="cursor:pointer;border-color:#bbf7d0;background:#f0fdf4;color:#166534">
+       <div class="sd" style="background:#16a34a"></div>Atas<span class="sc" style="color:#166534">${atas}</span>
+     </button>
+     <button type="button" class="stat-pill" onclick="quickFilter('atasPending')" title="Filtrar atas com pendencias" style="cursor:pointer;border-color:#fde68a;background:#fffbeb;color:#854d0e">
+       <div class="sd" style="background:#d97706"></div>Atas pendentes<span class="sc" style="color:#854d0e">${atasPendentes}</span>
      </button>` +
     `<div class="stat-pill" style="margin-left:auto;background:#eff6ff;border-color:#bfdbfe">
        <div class="sd" style="background:#6366f1"></div>Filtrado<span class="sc" style="color:#4338ca">${vis.size}</span>
@@ -962,6 +1191,11 @@ function setSyncStatus(type, msg) {
 // DRAG & DROP
 // ═══════════════════════════════════════════════════════
 function dStart(e, id) {
+  if (!requireOperatorName()) {
+    e.preventDefault();
+    dragId = null;
+    return false;
+  }
   dragId = id; e.dataTransfer.effectAllowed = 'move';
   setTimeout(() => document.getElementById('card-'+id)?.classList.add('dragging'), 0);
 }
@@ -975,6 +1209,7 @@ function dEnter(e) { e.currentTarget.classList.add('drag-over'); }
 function dLeave(e) { e.currentTarget.classList.remove('drag-over'); }
 async function dDrop(e, colId) {
   e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+  if (!requireOperatorName()) { dragId = null; return; }
   if (!dragId) return;
   const c = cards.find(x => x.id === dragId);
   if (c && c.situacao !== colId) {
@@ -986,6 +1221,8 @@ async function dDrop(e, colId) {
       return;
     }
     c.situacao = colId;
+    renderBoard();
+    pulseCard(c.id);
     const isNew = c.id.startsWith('usr_');
     await saveItem(isNew ? 'newCards' : 'overrides', buildPayload(c, isNew), before);
     showToast(`✓ Movido para "${COLS.find(x => x.id === colId)?.label}"`);
@@ -1009,6 +1246,7 @@ function showModal(title, body, foot) {
 // EDITAR CARTÃO — sem Nº Protocolo
 // ═══════════════════════════════════════════════════════
 function openEdit(id) {
+  if (!requireOperatorName()) return;
   const c = cards.find(x => x.id === id);
   if (!c) return;
   editId = id;
@@ -1142,6 +1380,7 @@ function openEdit(id) {
 }
 
 async function saveEdit() {
+  if (!requireOperatorName()) return;
   const c = cards.find(x => x.id === editId);
   if (!c) return;
   c.recebido        = document.getElementById('e_recv').value.trim();
@@ -1213,6 +1452,7 @@ function buildPayload(c, isNew) {
 // NOVO CARTÃO — sem Nº Protocolo
 // ═══════════════════════════════════════════════════════
 function openAdd(situacao) {
+  if (!requireOperatorName()) return;
   editId = null;
   const def = situacao || 'Em andamento';
   showModal('Novo Documento', `
@@ -1319,6 +1559,7 @@ function openAdd(situacao) {
 }
 
 async function addCard() {
+  if (!requireOperatorName()) return;
   // Limpar erros anteriores
   ['n_desc','n_cnpj','n_recv','n_apres','n_tel','n_pago','n_forma_pagamento'].forEach(id => {
     const el = document.getElementById(id);
@@ -1523,9 +1764,26 @@ function tableRowsFromMap(map, limit = 12) {
     .map(([name, total]) => `<tr><td>${esc(name)}</td><td style="text-align:right;font-weight:700">${total}</td></tr>`)
     .join('');
 }
+function cardRows(items, limit = 20) {
+  return items.slice(0, limit).map(c => `<tr>
+    <td>${esc(c.situacao || '')}</td>
+    <td>${daysOpen(c)}d</td>
+    <td>${esc(c.recebido || '')}</td>
+    <td>${esc(pendingReason(c))}</td>
+    <td>${esc((c.descricao || '').slice(0, 90))}</td>
+  </tr>`).join('');
+}
 function showReport() {
   const filteredCards = cards.filter(c => vis.has(c.id));
   const openCards = cards.filter(c => !['Concluído','Arquivado'].includes(c.situacao));
+  const ataCards = cards.filter(isAta);
+  const ataOpen = ataCards.filter(c => !['Concluído','Arquivado'].includes(c.situacao));
+  const ataNd = ataCards.filter(c => ['Nota Devolutiva','Aguard. Retorno ND'].includes(c.situacao));
+  const ataStale = ataOpen.map(c => ({ ...c, openDays: daysOpen(c) })).filter(c => c.openDays >= 30).sort((a,b) => b.openDays - a.openDays);
+  const ataMissing = ataOpen.filter(c => !c.telefone || !c.apresentado_por || !c.recebido || !paymentState(c));
+  const ataPendingRows = cardRows([...ataStale, ...ataNd, ...ataMissing].filter((c, idx, arr) => hasPendingIssue(c) && arr.findIndex(x => x.id === c.id) === idx).sort((a,b) => daysOpen(b) - daysOpen(a)));
+  const ataOwnerRows = tableRowsFromMap(countBy(ataCards, c => (c.recebido || 'Sem responsável').trim() || 'Sem responsável'));
+  const ataSituationRows = tableRowsFromMap(countBy(ataCards, c => c.situacao || 'Sem situação'), 8);
   const avgOpen = openCards.length ? Math.round(openCards.reduce((sum, c) => sum + daysOpen(c), 0) / openCards.length) : 0;
   const currentMonth = new Date().toISOString().slice(0, 7);
   const concludedMonth = cards.filter(c => monthKey(c.data_conclusao) === currentMonth).length;
@@ -1541,7 +1799,17 @@ function showReport() {
   const unpaidRows = cards.filter(c => (paymentState(c) === 'Não' || !paymentState(c)) && !['Arquivado'].includes(c.situacao)).sort(compareCards).slice(0, 20).map(c => `<tr><td>${esc(c.situacao || '')}</td><td>${esc(c.recebido || '')}</td><td>${esc(c.registro_primitivo || '')}</td><td>${esc((c.descricao || '').slice(0, 90))}</td></tr>`).join('');
   showModal('Relatório', `
     <div class="fgrid">
-      <div class="field"><label>Documentos abertos</label><div class="ro">${openCards.length}</div></div>
+      <div class="report-metrics">
+        <div class="report-card"><div class="rlabel">Documentos abertos</div><div class="rvalue">${openCards.length}</div></div>
+        <div class="report-card"><div class="rlabel">Tempo medio</div><div class="rvalue">${avgOpen}d</div></div>
+        <div class="report-card"><div class="rlabel">Concluidos no mes</div><div class="rvalue">${concludedMonth}</div></div>
+        <div class="report-card"><div class="rlabel">Total no painel</div><div class="rvalue">${cards.length}</div></div>
+        <div class="report-card ata"><div class="rlabel">Atas abertas</div><div class="rvalue">${ataOpen.length}</div></div>
+        <div class="report-card ata"><div class="rlabel">Atas em ND</div><div class="rvalue">${ataNd.length}</div></div>
+        <div class="report-card warn"><div class="rlabel">Atas 30+ dias</div><div class="rvalue">${ataStale.length}</div></div>
+        <div class="report-card warn"><div class="rlabel">Nao pagos / sem info</div><div class="rvalue">${unpaid}</div></div>
+      </div>
+      <div class="field compact-report-field"><label>Documentos abertos</label><div class="ro">${openCards.length}</div></div>
       <div class="field"><label>Tempo médio em aberto</label><div class="ro">${avgOpen} dias</div></div>
       <div class="field"><label>Concluídos no mês</label><div class="ro">${concludedMonth}</div></div>
       <div class="field"><label>Total no painel</label><div class="ro">${cards.length}</div></div>
@@ -1551,6 +1819,15 @@ function showReport() {
       <div class="field"><label>Pagos no mês</label><div class="ro">${paidMonth}</div></div>
       <div class="field"><label>Filtrados na tela</label><div class="ro">${filteredCards.length}</div></div>
       <div class="field"><label>Arquivados</label><div class="ro">${cards.filter(c => c.situacao === 'Arquivado').length}</div></div>
+      <div class="fsec"><span class="fsec-icon">▣</span>Visão de atas</div>
+      <div class="field"><label>Total de atas</label><div class="ro">${ataCards.length}</div></div>
+      <div class="field"><label>Atas abertas</label><div class="ro">${ataOpen.length}</div></div>
+      <div class="field"><label>Atas em ND/retorno</label><div class="ro">${ataNd.length}</div></div>
+      <div class="field"><label>Atas paradas 30+ dias</label><div class="ro">${ataStale.length}</div></div>
+      <div class="field s2"><label>Atas por situação</label><div class="ro"><table style="width:100%;border-collapse:collapse">${ataSituationRows || '<tr><td>Nenhuma ata encontrada.</td></tr>'}</table></div></div>
+      <div class="field s2"><label>Atas por responsável</label><div class="ro"><table style="width:100%;border-collapse:collapse">${ataOwnerRows || '<tr><td>Nenhuma ata encontrada.</td></tr>'}</table></div></div>
+      <div class="field s2"><label>Pendências de atas</label><div class="ro"><table style="width:100%;border-collapse:collapse"><tr><td><strong>Status</strong></td><td><strong>Dias</strong></td><td><strong>Resp.</strong></td><td><strong>Motivo</strong></td><td><strong>Descrição</strong></td></tr>${ataPendingRows || '<tr><td colspan="5">Nenhuma pendência de ata encontrada.</td></tr>'}</table></div></div>
+      <div class="fsec"><span class="fsec-icon">▦</span>Relatório geral</div>
       <div class="field s2"><label>Financeiro por status</label><div class="ro"><table style="width:100%;border-collapse:collapse">${paymentRows || '<tr><td>Nenhum dado</td></tr>'}</table></div></div>
       <div class="field s2"><label>Formas de pagamento</label><div class="ro"><table style="width:100%;border-collapse:collapse">${methodRows || '<tr><td>Nenhuma forma informada</td></tr>'}</table></div></div>
       <div class="field s2"><label>Por situação</label><div class="ro"><table style="width:100%;border-collapse:collapse">${situationRows || '<tr><td>Nenhum dado</td></tr>'}</table></div></div>
