@@ -379,6 +379,18 @@
   .report-card.ata { border-color: #bbf7d0; background: #f7fef9; }
   .report-card.warn { border-color: #fed7aa; background: #fffaf3; }
   .compact-report-field { display: none; }
+  .operator-wrap { display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
+  .operator-badge { display: none; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border-radius: 999px; border: 1px solid rgba(187,247,208,0.45); background: rgba(22,101,52,0.18); color: #dcfce7; font-size: 12px; font-weight: 750; white-space: nowrap; }
+  .operator-badge.show { display: inline-flex; }
+  .operator-change { display: none; height: 28px; padding: 0 9px; border-radius: 7px; border: 1px solid rgba(255,255,255,0.22); background: rgba(255,255,255,0.1); color: #dbeafe; font-size: 11px; font-weight: 700; cursor: pointer; }
+  .operator-badge.show + .operator-change { display: inline-flex; align-items: center; }
+  .view-tabs { display: flex; align-items: center; gap: 5px; padding: 4px; border-radius: 999px; background: rgba(15,23,42,0.16); border: 1px solid rgba(255,255,255,0.12); }
+  .view-tab { height: 28px; padding: 0 11px; border: 0; border-radius: 999px; background: transparent; color: #cbd5e1; font-size: 12px; font-weight: 750; cursor: pointer; transition: background 0.16s ease, color 0.16s ease, transform 0.16s ease; }
+  .view-tab:hover { background: rgba(255,255,255,0.1); color: #fff; }
+  .view-tab.active { background: #fff; color: #0f2544; box-shadow: 0 1px 4px rgba(15,23,42,0.14); }
+  .card-audit { display: flex; align-items: center; gap: 5px; margin-top: 7px; padding-top: 7px; border-top: 1px dashed #d8e1ed; color: #64748b; font-size: 10.5px; font-weight: 650; position: relative; z-index: 1; }
+  .card-audit::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #94a3b8; flex-shrink: 0; }
+  .card:hover .card-audit::before { background: #2563eb; }
   @keyframes boardFadeIn {
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
@@ -512,7 +524,11 @@
       <h1>📋 Painel de Documentos</h1>
       <p>Cartório de Registro Civil e PJ — Chapecó/SC &nbsp;·&nbsp; <span id="totalSpan">…</span> registros</p>
     </div>
-    <input type="text" id="operatorName" class="operator-input" placeholder="Seu nome" oninput="saveOperatorName()" title="Identifica as próximas alterações neste computador">
+    <div class="operator-wrap">
+      <input type="text" id="operatorName" class="operator-input" placeholder="Seu nome" oninput="saveOperatorName()" title="Identifica as próximas alterações neste computador">
+      <span class="operator-badge" id="operatorBadge"></span>
+      <button class="operator-change" onclick="changeOperatorName()" title="Trocar operador">Trocar</button>
+    </div>
     <input type="text" id="searchInput" placeholder="Buscar descrição, registro, pagamento, telefone..." oninput="applyFilters()">
     <div class="header-cta">
       <button class="btn btn-primary" onclick="openAdd()">+ Novo</button>
@@ -522,6 +538,13 @@
   </div>
   <!-- Linha 2: filtros + ações -->
   <div class="header-filters">
+    <div class="view-tabs" id="viewTabs">
+      <button type="button" class="view-tab active" data-view="all" onclick="setViewMode('all')">Todos</button>
+      <button type="button" class="view-tab" data-view="atas" onclick="setViewMode('atas')">Atas</button>
+      <button type="button" class="view-tab" data-view="pending" onclick="setViewMode('pending')">Pendências</button>
+      <button type="button" class="view-tab" data-view="today" onclick="setViewMode('today')">Hoje</button>
+      <button type="button" class="view-tab" data-view="archived" onclick="setViewMode('archived')">Arquivados</button>
+    </div>
     <div class="filter-group">
       <span class="filter-label">Triagem</span>
     <select id="fPrio" onchange="applyFilters()">
@@ -628,6 +651,7 @@ let activeDbUrl = '', auth = null, currentUser = null, firebaseApp = null;
 let focusMode = localStorage.getItem('cartorio_focus_mode') === '1';
 let collapsedCols = new Set(JSON.parse(localStorage.getItem('cartorio_collapsed_cols') || '[]'));
 let lastSavedCard = null;
+let viewMode = localStorage.getItem('cartorio_view_mode') || 'all';
 
 // ═══════════════════════════════════════════════════════
 // UTILS DE DATA
@@ -635,6 +659,7 @@ let lastSavedCard = null;
 function toDateInput(v) {
   if (!v) return '';
   v = String(v).trim();
+  if (/^\d{4}-\d{2}-\d{2}T/.test(v)) return v.slice(0, 10);
   if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
   const m = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
   if (m) return `${m[3]}-${m[2]}-${m[1]}`;
@@ -649,6 +674,9 @@ function fromDateInput(v) {
 function todayBr() {
   return fromDateInput(new Date().toISOString().slice(0, 10));
 }
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
+}
 function parseDateValue(v) {
   const iso = toDateInput(v);
   return iso ? new Date(iso + 'T00:00:00').getTime() : Number.MAX_SAFE_INTEGER;
@@ -662,6 +690,20 @@ function normalizeText(v) {
 }
 function onlyDigits(v) {
   return String(v || '').replace(/\D/g, '');
+}
+function formatShortDateTime(v) {
+  if (!v) return '';
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+function lastUpdateText(c) {
+  const when = formatShortDateTime(c.updatedAt);
+  const who = c.updatedBy || '';
+  if (when && who) return `${who} · ${when}`;
+  if (when) return `Alterado ${when}`;
+  if (who) return `Alterado por ${who}`;
+  return '';
 }
 function paymentState(c) {
   return c.pago || '';
@@ -709,6 +751,14 @@ function daysOpen(c) {
 }
 function needsAttention(c) {
   return !['Concluído','Arquivado'].includes(c.situacao) && (c.priority === 'Alta' || daysOpen(c) >= 30 || (c.prazo != null && c.prazo <= 30));
+}
+function isTodayWork(c) {
+  if (c.situacao === 'Arquivado') return false;
+  if (needsAttention(c)) return true;
+  if (['Nota Devolutiva','Aguard. Retorno ND'].includes(c.situacao)) return true;
+  if (c.situacao === 'Concluído' && !c.data_retirada) return true;
+  const changed = toDateInput(c.updatedAt || c.data_conclusao || c.data_entrada);
+  return changed === todayIso();
 }
 function priorityRank(v) {
   return v === 'Alta' ? 0 : v === 'Média' ? 1 : 2;
@@ -760,6 +810,13 @@ function saveOperatorName() {
   enforceOperatorName();
   renderBoard();
 }
+function updateOperatorBadge() {
+  const badge = document.getElementById('operatorBadge');
+  if (!badge) return;
+  const name = currentOperatorName();
+  badge.textContent = name ? `Operador: ${name}` : '';
+  badge.classList.toggle('show', !!name);
+}
 function currentOperatorName() {
   return (currentUser?.email || localStorage.getItem(OPERATOR_KEY) || document.getElementById('operatorName')?.value || '').trim();
 }
@@ -782,7 +839,15 @@ function enforceOperatorName() {
 function syncOperatorState() {
   const identified = hasOperatorName();
   document.body.classList.toggle('operator-missing', !identified);
+  updateOperatorBadge();
   return identified;
+}
+function changeOperatorName() {
+  localStorage.removeItem(OPERATOR_KEY);
+  document.getElementById('operatorName').value = '';
+  syncOperatorState();
+  enforceOperatorName();
+  renderBoard();
 }
 function confirmOperatorName() {
   const input = document.getElementById('operatorGateName');
@@ -939,6 +1004,8 @@ async function saveItem(type, payload, before = null) {
 (function init() {
   initOperatorName();
   syncFocusMode();
+  syncViewTabs();
+  syncAtaMode();
   const savedUrl = localStorage.getItem(FIREBASE_KEY);
   document.getElementById('firebaseUrl').value = savedUrl || '';
   document.getElementById('firebaseAuthConfig').value = localStorage.getItem(AUTH_CONFIG_KEY) || '';
@@ -975,6 +1042,10 @@ function applyFilters() {
   const sit  = document.getElementById('fSit').value;
   const pago = document.getElementById('fPago').value;
   vis = new Set(cards.filter(c => {
+    if (viewMode === 'atas' && !isAta(c)) return false;
+    if (viewMode === 'pending' && (['Concluído','Arquivado'].includes(c.situacao) || !hasPendingIssue(c))) return false;
+    if (viewMode === 'today' && !isTodayWork(c)) return false;
+    if (viewMode === 'archived' && c.situacao !== 'Arquivado') return false;
     if (prio && c.priority !== prio) return false;
     if (aba  && c.aba !== aba) return false;
     if (tipo === 'atas' && !isAta(c)) return false;
@@ -995,11 +1066,22 @@ function applyFilters() {
 }
 function resetFilters() {
   ['searchInput','fPrio','fAba','fTipo','fRecv','fSit','fPago','colJump'].forEach(id => { document.getElementById(id).value = ''; });
+  setViewMode('all', false);
   applyFilters();
 }
 function syncAtaMode() {
-  const isActive = document.getElementById('fTipo')?.value === 'atas';
+  const isActive = document.getElementById('fTipo')?.value === 'atas' || viewMode === 'atas';
   document.body.classList.toggle('ata-mode', isActive);
+}
+function syncViewTabs() {
+  document.querySelectorAll('.view-tab').forEach(btn => btn.classList.toggle('active', btn.dataset.view === viewMode));
+}
+function setViewMode(mode, shouldApply = true) {
+  viewMode = mode || 'all';
+  localStorage.setItem('cartorio_view_mode', viewMode);
+  syncViewTabs();
+  syncAtaMode();
+  if (shouldApply) applyFilters();
 }
 function syncFocusMode() {
   document.body.classList.toggle('focus-mode', focusMode);
@@ -1019,17 +1101,25 @@ function jumpColumn(id) {
 function quickFilter(kind) {
   resetFilters();
   if (kind === 'attention') {
+    setViewMode('pending', false);
     vis = new Set(cards.filter(needsAttention).map(c => c.id));
   } else if (kind === 'nd') {
+    setViewMode('pending', false);
     vis = new Set(cards.filter(c => ['Nota Devolutiva','Aguard. Retorno ND'].includes(c.situacao)).map(c => c.id));
   } else if (kind === 'open') {
+    setViewMode('all', false);
     vis = new Set(cards.filter(c => !['Concluído','Arquivado'].includes(c.situacao)).map(c => c.id));
   } else if (kind === 'atas') {
+    setViewMode('atas', false);
     document.getElementById('fTipo').value = 'atas';
     vis = new Set(cards.filter(isAta).map(c => c.id));
   } else if (kind === 'atasPending') {
+    setViewMode('pending', false);
     document.getElementById('fTipo').value = 'atas';
     vis = new Set(cards.filter(c => isAta(c) && !['Concluído','Arquivado'].includes(c.situacao) && hasPendingIssue(c)).map(c => c.id));
+  } else if (kind === 'today') {
+    setViewMode('today', false);
+    vis = new Set(cards.filter(isTodayWork).map(c => c.id));
   }
   syncAtaMode();
   renderBoard(); renderStats();
@@ -1108,6 +1198,7 @@ function toggleColumn(id) {
 }
 function renderCard(c, compact = false) {
   const desc = (c.descricao||'').trim() || '(sem descrição)';
+  const audit = lastUpdateText(c);
   const pago = c.pago || '';
   const payClass = pago === 'Não' ? 'Nao' : (pago || 'NI');
   const payLabel = pago || 'N/I';
@@ -1145,6 +1236,7 @@ function renderCard(c, compact = false) {
         <span class="cm cm-date">${c.data_entrada||''}</span>
         ${pzEl}
       </div>
+      ${audit && !compact ? `<div class="card-audit" title="Ultima alteracao">${esc(audit)}</div>` : ''}
     </div>`;
 }
 function renderStats() {
@@ -1157,6 +1249,7 @@ function renderStats() {
   const nd = visibleCards.filter(c => ['Nota Devolutiva','Aguard. Retorno ND'].includes(c.situacao)).length;
   const atas = visibleCards.filter(isAta).length;
   const atasPendentes = visibleCards.filter(c => isAta(c) && !['Concluído','Arquivado'].includes(c.situacao) && hasPendingIssue(c)).length;
+  const today = visibleCards.filter(isTodayWork).length;
   document.getElementById('statsBar').innerHTML =
     COLS.map(col => `<div class="stat-pill">
       <div class="sd" style="background:${col.color}"></div>${col.label}<span class="sc">${cnt[col.id]}</span>
@@ -1175,6 +1268,9 @@ function renderStats() {
      </button>
      <button type="button" class="stat-pill" onclick="quickFilter('atasPending')" title="Filtrar atas com pendencias" style="cursor:pointer;border-color:#fde68a;background:#fffbeb;color:#854d0e">
        <div class="sd" style="background:#d97706"></div>Atas pendentes<span class="sc" style="color:#854d0e">${atasPendentes}</span>
+     </button>
+     <button type="button" class="stat-pill" onclick="quickFilter('today')" title="Filtrar trabalho do dia" style="cursor:pointer;border-color:#c4b5fd;background:#f5f3ff;color:#5b21b6">
+       <div class="sd" style="background:#7c3aed"></div>Hoje<span class="sc" style="color:#5b21b6">${today}</span>
      </button>` +
     `<div class="stat-pill" style="margin-left:auto;background:#eff6ff;border-color:#bfdbfe">
        <div class="sd" style="background:#6366f1"></div>Filtrado<span class="sc" style="color:#4338ca">${vis.size}</span>
