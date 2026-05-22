@@ -1218,6 +1218,10 @@ function openAdd(situacao) {
         </select>
       </div>
       <div class="field">
+        <label>Valor R$</label>
+        <input type="text" id="n_valor" placeholder="Ex: 150,00">
+      </div>
+      <div class="field">
         <label>Forma de Pagamento</label>
         <input type="text" id="n_forma_pagamento" placeholder="Pix, dinheiro, cartão...">
       </div>
@@ -1301,6 +1305,7 @@ async function addCard() {
     telefone:        document.getElementById('n_tel').value.trim(),
     situacao:        document.getElementById('n_sit').value,
     priority:        document.getElementById('n_prio').value,
+    valor:           document.getElementById('n_valor')?.value.trim()||'',
     pago:            document.getElementById('n_pago').value,
     forma_pagamento: document.getElementById('n_forma_pagamento').value.trim(),
     observacoes:     document.getElementById('n_obs').value.trim(),
@@ -1370,10 +1375,16 @@ td{border:1px solid #000;padding:3px 6px;vertical-align:middle;}
 .cb{display:inline-flex;align-items:center;white-space:nowrap;font-size:10.5px;}
 .box{display:inline-block;width:11px;height:11px;border:1.5px solid #555;text-align:center;line-height:9px;font-size:10px;font-weight:900;flex-shrink:0;margin-right:2px;}
 .divider{border:none;border-top:2px dashed #999;margin:4mm 0;}
+[contenteditable]{outline:none;cursor:text;}
+.val-edit{min-width:60px;display:inline-block;border-bottom:1.5px dashed #888;}
+.val-edit:empty::before{content:attr(data-placeholder);color:#aaa;font-style:italic;}
+.print-btn{display:block;margin:10px auto 0;padding:9px 30px;background:#1a56db;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;}
 @media print{
   body{margin:0;}
   @page{margin:8mm;size:A4;}
-  .divider{border-top:2px dashed #aaa;}
+  [contenteditable]{border-bottom:none !important;}
+  .val-edit{border-bottom:none;}
+  .print-btn{display:none !important;}
 }
 </style>
 </head>
@@ -1385,21 +1396,21 @@ td{border:1px solid #000;padding:3px 6px;vertical-align:middle;}
     <span class="inst">Cartório de Registro Civil e PJ — Chapecó/SC</span>
     <span class="inst">Rua Assis Brasil, 305 E — Maria Goretti — Chapecó/SC</span>
   </div>
-  <div class="fh-ata"><span class="ata-lbl">ATA Nº</span><span class="ata-val">${card.aba||''}</span></div>
+  <div class="fh-ata"><span class="ata-lbl">ATA Nº</span><span class="ata-val" contenteditable="true" title="Clique para editar">${card.aba||''}</span></div>
 </div>
 <table>
 <tr><td class="lbl">Registro Originário nº</td><td class="val">${card.registro_primitivo||'—'}&nbsp;&nbsp;<strong>${card.tipo||''}</strong></td></tr>
 <tr><td class="lbl">Data de Recebimento</td><td class="val">${card.data_entrada||dataBr}</td></tr>
 <tr><td class="lbl">Nome da Empresa / Associação</td><td class="val tall">${card.descricao||''}</td></tr>
 <tr><td class="lbl">CNPJ / CPF</td><td class="val">${card.cnpj||'—'}</td></tr>
-<tr><td class="lbl">Valor R$</td><td class="val"><span class="cb-row">—&nbsp;&nbsp;<span class="cb"><span class="box">${cb(card.pago==='Sim')}</span>Pago</span><span class="cb"><span class="box">${cb(card.pago==='Não'||card.pago==='Nao')}</span>Não Pago</span>${card.pago==='Isento'?'<span style="font-size:10px;margin-left:3px">Isento</span>':''}</span></td></tr>
+<tr><td class="lbl">Valor R$</td><td class="val"><span class="cb-row"><span contenteditable="true" class="val-edit" data-placeholder="digitar valor">${card.valor||''}</span>&nbsp;&nbsp;<span class="cb"><span class="box">${cb(card.pago==='Sim')}</span>Pago</span><span class="cb"><span class="box">${cb(card.pago==='Não'||card.pago==='Nao')}</span>Não Pago</span>${card.pago==='Isento'?'<span style="font-size:10px;margin-left:3px">Isento</span>':''}</span></td></tr>
 <tr><td class="lbl">Forma de Pagamento</td><td class="val"><span class="cb-row"><span class="cb"><span class="box">${cb(fPago.includes('dinheir'))}</span>Dinheiro</span><span class="cb"><span class="box">${cb(fPago.includes('débit')||fPago.includes('debit'))}</span>Débito</span><span class="cb"><span class="box">${cb(fPago.includes('depós')||fPago.includes('depos'))}</span>Depósito</span><span class="cb"><span class="box">${cb(fPago.includes('pix'))}</span>PIX</span><span class="cb"><span class="box">${cb(fPago.includes('cartã')||fPago.includes('carta'))}</span>Cartão</span>${!fPago.match(/dinheir|d[eé]bit|dep[óo]s|pix|cart[ãa]/)&&card.forma_pagamento?`<span style="font-size:10px">Outro:${card.forma_pagamento}</span>`:''}</span></td></tr>
 <tr><td class="lbl">Requerente assinou no Cartório</td><td class="val"><span class="cb-row"><span class="cb"><span class="box">&nbsp;&nbsp;</span>Sim</span><span class="cb"><span class="box">&nbsp;&nbsp;</span>Não&nbsp;<span style="font-size:9.5px;color:#666">(caso não reconhecido firma)</span></span></span></td></tr>
 <tr><td class="lbl">Nome do Apresentante</td><td class="val">${card.apresentado_por||''}</td></tr>
 <tr><td class="lbl">Telefones</td><td class="val">${card.telefone||''}</td></tr>
-<tr><td class="lbl">Linha Planilha nº</td><td class="val">&nbsp;</td></tr>
-<tr><td class="lbl">Responsável pelo Recebimento</td><td class="val"><span class="cb-row">${respRow}</span></td></tr>
+<tr><td class="lbl">Responsável pelo Recebimento</td><td class="val" style="font-weight:700">${card.recebido||''}</td></tr>
 </table>
 ${card.observacoes?`<div style="border:1px solid #bbb;border-top:none;padding:4px 6px;font-size:10.5px"><strong>Obs:</strong> ${card.observacoes}</div>`:''}
 </div>
+<button class="print-btn" onclick="window.print()">🖨️ Imprimir</button>
 </body></html>`
