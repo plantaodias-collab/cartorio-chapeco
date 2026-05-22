@@ -1390,6 +1390,7 @@ function printDocument(card) {
   const respRow = cbNomes + (!NOMES.includes(recvUp)&&card.recebido?` <span class="cb"><span class="box">&nbsp;&nbsp;</span>&nbsp;Outro:&nbsp;${card.recebido}</span>`:'');
   function cb(c){ return c?'&#10005;':'&nbsp;&nbsp;'; }
   const fPago = (card.forma_pagamento||'').toLowerCase();
+  const isAta = (card.aba||'').toUpperCase().includes('ATA');
   const printHtml = `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -1436,7 +1437,7 @@ td{border:1px solid #000;padding:3px 6px;vertical-align:middle;}
     <span class="inst">Cartório de Registro Civil e PJ — Chapecó/SC</span>
     <span class="inst">Rua Assis Brasil, 305 E — Maria Goretti — Chapecó/SC</span>
   </div>
-  <div class="fh-ata"><span class="ata-lbl">ATA Nº</span><span class="ata-val" contenteditable="true" title="Clique para editar">${card.aba||''}</span></div>
+  <div class="fh-ata">${isAta ? '<span class="ata-lbl">ATA Nº</span>' : ''}<span class="ata-val" contenteditable="true" title="Clique para editar">${card.aba||''}</span></div>
 </div>
 <table>
 <tr><td class="lbl">Registro Originário nº</td><td class="val">${card.registro_primitivo||'—'}&nbsp;&nbsp;<strong>${card.tipo||''}</strong></td></tr>
