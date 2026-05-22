@@ -1006,7 +1006,7 @@ function showModal(title, body, foot) {
 }
 
 // ═══════════════════════════════════════════════════════
-// EDITAR CARTÃO — sem Nº Protocolo e CPF/CNPJ
+// EDITAR CARTÃO — sem Nº Protocolo
 // ═══════════════════════════════════════════════════════
 function openEdit(id) {
   const c = cards.find(x => x.id === id);
@@ -1060,10 +1060,10 @@ function openEdit(id) {
 
       <div class="field s2">
         <label>CNPJ / CPF <span class="req">*</span></label>
-        <input type="text" id="n_cnpj" placeholder="00.000.000/0001-00 ou 000.000.000-00">
+        <input type="text" id="e_cnpj" value="${esc(c.cnpj === '(Sem CNPJ)' ? '' : c.cnpj || '')}"${c.cnpj === '(Sem CNPJ)' ? ' disabled' : ''} placeholder="00.000.000/0001-00 ou 000.000.000-00">
         <label style="margin-top:7px;display:flex;align-items:center;gap:7px;font-size:12px;text-transform:none;letter-spacing:0;color:#64748b;cursor:pointer;font-weight:500">
-          <input type="checkbox" id="n_sem_cnpj" style="width:15px;height:15px;cursor:pointer"
-            onchange="const f=document.getElementById('n_cnpj');f.disabled=this.checked;if(this.checked){f.value='';f.closest('.field').classList.remove('field-required-error');}else{f.focus();}">
+          <input type="checkbox" id="e_sem_cnpj" style="width:15px;height:15px;cursor:pointer"${c.cnpj === '(Sem CNPJ)' ? ' checked' : ''}
+            onchange="const f=document.getElementById('e_cnpj');f.disabled=this.checked;if(this.checked){f.value='';f.closest('.field').classList.remove('field-required-error');}else{f.focus();}">
           Não tem CNPJ / CPF
         </label>
       </div>
@@ -1150,6 +1150,7 @@ async function saveEdit() {
   c.situacao        = document.getElementById('e_sit').value;
   c.priority        = document.getElementById('e_prio').value;
   c.registro_primitivo = document.getElementById('e_registro_primitivo').value.trim();
+  c.cnpj            = document.getElementById('e_sem_cnpj')?.checked ? '(Sem CNPJ)' : document.getElementById('e_cnpj').value.trim();
   c.valor           = document.getElementById('e_valor')?.value.trim()||'';
   c.pago            = document.getElementById('e_pago').value;
   c.forma_pagamento = document.getElementById('e_forma_pagamento').value.trim();
@@ -1193,6 +1194,7 @@ function buildPayload(c, isNew) {
     recebido:         c.recebido         || '',
     apresentado_por:  c.apresentado_por  || '',
     telefone:         c.telefone         || '',
+    cnpj:             c.cnpj             || '',
     pago:             c.pago             || '',
     forma_pagamento:  c.forma_pagamento  || '',
     registro_primitivo: c.registro_primitivo || '',
@@ -1208,7 +1210,7 @@ function buildPayload(c, isNew) {
 }
 
 // ═══════════════════════════════════════════════════════
-// NOVO CARTÃO — sem Nº Protocolo e CPF/CNPJ
+// NOVO CARTÃO — sem Nº Protocolo
 // ═══════════════════════════════════════════════════════
 function openAdd(situacao) {
   editId = null;
@@ -1220,7 +1222,15 @@ function openAdd(situacao) {
         <label>Descrição / Partes <span class="req">*</span></label>
         <textarea id="n_desc" placeholder="Descreva o documento ou partes envolvidas..." style="min-height:90px"></textarea>
       </div>
-      <div class="field s2"><label>CNPJ / CPF *</label><input type="text" id="n_cnpj" required placeholder="Informe o CNPJ ou CPF"></div>
+      <div class="field s2">
+        <label>CNPJ / CPF <span class="req">*</span></label>
+        <input type="text" id="n_cnpj" required placeholder="00.000.000/0001-00 ou 000.000.000-00">
+        <label style="margin-top:7px;display:flex;align-items:center;gap:7px;font-size:12px;text-transform:none;letter-spacing:0;color:#64748b;cursor:pointer;font-weight:500">
+          <input type="checkbox" id="n_sem_cnpj" style="width:15px;height:15px;cursor:pointer"
+            onchange="const f=document.getElementById('n_cnpj');f.disabled=this.checked;if(this.checked){f.value='';f.closest('.field').classList.remove('field-required-error');}else{f.focus();}">
+          Não tem CNPJ / CPF
+        </label>
+      </div>
       <div class="field">
         <label>Aba / Serviço <span class="req">*</span></label>
         <select id="n_aba">${ABAS.map(a=>`<option value="${a}">${a}</option>`).join('')}<option value="Outro">Outro</option></select>
