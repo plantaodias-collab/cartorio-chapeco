@@ -622,6 +622,7 @@
 // CONSTANTES
 // ═══════════════════════════════════════════════════════
 const FIREBASE_KEY = 'cartorio_firebase_url_v2';
+const DEFAULT_FIREBASE_URL = 'https://cartorio-chapeco-default-rtdb.firebaseio.com';
 const AUTH_CONFIG_KEY = 'cartorio_auth_config_v1';
 const OPERATOR_KEY = 'cartorio_user_name';
 const DB_PATH      = 'kanban';
@@ -794,7 +795,7 @@ function requiresArchiveDetails(c) {
 // SETUP FIREBASE
 // ═══════════════════════════════════════════════════════
 function showSetup() {
-  document.getElementById('firebaseUrl').value = localStorage.getItem(FIREBASE_KEY) || '';
+  document.getElementById('firebaseUrl').value = localStorage.getItem(FIREBASE_KEY) || DEFAULT_FIREBASE_URL;
   document.getElementById('firebaseAuthConfig').value = localStorage.getItem(AUTH_CONFIG_KEY) || '';
   document.getElementById('setup-screen').classList.remove('hidden');
 }
@@ -1006,13 +1007,12 @@ async function saveItem(type, payload, before = null) {
   syncFocusMode();
   syncViewTabs();
   syncAtaMode();
-  const savedUrl = localStorage.getItem(FIREBASE_KEY);
-  document.getElementById('firebaseUrl').value = savedUrl || '';
+  const savedUrl = localStorage.getItem(FIREBASE_KEY) || DEFAULT_FIREBASE_URL;
+  if (!localStorage.getItem(FIREBASE_KEY)) localStorage.setItem(FIREBASE_KEY, savedUrl);
+  document.getElementById('firebaseUrl').value = savedUrl;
   document.getElementById('firebaseAuthConfig').value = localStorage.getItem(AUTH_CONFIG_KEY) || '';
-  if (savedUrl) {
-    document.getElementById('setup-screen').classList.add('hidden');
-    connectFirebase(savedUrl);
-  }
+  document.getElementById('setup-screen').classList.add('hidden');
+  connectFirebase(savedUrl);
 })();
 
 // ═══════════════════════════════════════════════════════
