@@ -1375,7 +1375,7 @@ function openEdit(id) {
 
       <div class="fsec"><span class="fsec-icon">💳</span> Pagamento</div>
       <div class="field">
-        <label>Pago?</label>
+        <label>Pago? <span class="req">*</span></label>
         <select id="e_pago">
           <option value=""${!c.pago?' selected':''}>Não informado</option>
           <option value="Sim"${c.pago==='Sim'?' selected':''}>Sim</option>
@@ -1388,7 +1388,7 @@ function openEdit(id) {
         <input type="text" id="e_valor" value="${esc(c.valor||'')}" placeholder="Ex: 150,00" style="max-width:140px">
       </div>
       <div class="field">
-        <label>Forma de Pagamento</label>
+        <label>Forma de Pagamento <span class="req">*</span></label>
         <input type="text" id="e_forma_pagamento" value="${esc(c.forma_pagamento||'')}" placeholder="Pix, dinheiro, cartão...">
       </div>
 
@@ -1477,6 +1477,7 @@ function openEdit(id) {
 
 async function saveEdit() {
   if (!requireOperatorName()) return;
+  if (!requirePaymentFields('e')) return;
   const c = cards.find(x => x.id === editId);
   if (!c) return;
   c.recebido        = document.getElementById('e_recv').value.trim();
@@ -1544,6 +1545,20 @@ function buildPayload(c, isNew) {
   };
 }
 
+function requirePaymentFields(prefix) {
+  const required = [
+    { id: `${prefix}_pago`, label: 'Pagamento' },
+    { id: `${prefix}_forma_pagamento`, label: 'Forma de Pagamento' },
+  ];
+  required.forEach(f => document.getElementById(f.id)?.closest('.field')?.classList.remove('field-required-error'));
+  const missing = required.filter(f => !document.getElementById(f.id)?.value.trim());
+  if (!missing.length) return true;
+  missing.forEach(f => document.getElementById(f.id)?.closest('.field')?.classList.add('field-required-error'));
+  document.getElementById(missing[0].id)?.focus();
+  showToast('⚠ Preencha: ' + missing.map(f => f.label).join(', '));
+  return false;
+}
+
 // ═══════════════════════════════════════════════════════
 // NOVO CARTÃO — sem Nº Protocolo
 // ═══════════════════════════════════════════════════════
@@ -1596,7 +1611,7 @@ function openAdd(situacao) {
 
       <div class="fsec"><span class="fsec-icon">💳</span> Pagamento</div>
       <div class="field">
-        <label>Pago?</label>
+        <label>Pago? <span class="req">*</span></label>
         <select id="n_pago">
           <option value="" selected>Não informado</option>
           <option value="Sim">Sim</option>
@@ -1609,7 +1624,7 @@ function openAdd(situacao) {
         <input type="text" id="n_valor" placeholder="Ex: 150,00" style="max-width:140px">
       </div>
       <div class="field">
-        <label>Forma de Pagamento</label>
+        <label>Forma de Pagamento <span class="req">*</span></label>
         <input type="text" id="n_forma_pagamento" placeholder="Pix, dinheiro, cartão...">
       </div>
 
