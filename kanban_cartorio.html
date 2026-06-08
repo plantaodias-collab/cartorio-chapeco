@@ -265,6 +265,31 @@ const ABAS = [
 let cards = [], vis = new Set(), dragId = null, editId = null;
 let db = null;
 
+function normalizeDocumentId(v) {
+  return String(v || '').toUpperCase().replace(/[^0-9A-Z]/g, '');
+}
+function formatDocumentId(v) {
+  const doc = normalizeDocumentId(v);
+  if (/^\d{11}$/.test(doc)) return doc.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4');
+  if (/^[0-9A-Z]{12}\d{2}$/.test(doc)) return doc.replace(/^([0-9A-Z]{2})([0-9A-Z]{3})([0-9A-Z]{3})([0-9A-Z]{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+  return String(v || '').trim().toUpperCase();
+}
+function validateDocumentField(id, label) {
+  const el = document.getElementById(id);
+  if (!el) return true;
+  const value = el.value.trim();
+  if (!value) return true;
+  const doc = normalizeDocumentId(value);
+  const valid = /^\d{11}$/.test(doc) || /^[0-9A-Z]{12}\d{2}$/.test(doc);
+  if (valid) {
+    el.value = formatDocumentId(doc);
+    return true;
+  }
+  el.focus();
+  showToast(`${label} deve ser CPF com 11 digitos, CNPJ numerico ou CNPJ alfanumerico com 14 posicoes e 2 ultimos digitos numericos.`);
+  return false;
+}
+
 // ═══════════════════════════════════════════════════════════════════
 //  SETUP FIREBASE
 // ═══════════════════════════════════════════════════════════════════
@@ -611,7 +636,7 @@ function openAdd(situacao) {
     <div class="fgrid">
       <div class="fsec">Identificação</div>
       <div class="field s2"><label>Descrição / Partes *</label><textarea id="n_desc" placeholder="Descreva o documento ou partes envolvidas..."></textarea></div>
-      <div class="field s2"><label>CNPJ / CPF *</label><input id="n_cnpj" required placeholder="Informe o CNPJ ou CPF"></div>
+      <div class="field s2"><label>CNPJ / CPF *</label><input id="n_cnpj" required placeholder="00.000.000/0001-00, AA.AAA.AAA/AAAA-00 ou 000.000.000-00"></div>
       <div class="field"><label>Aba / Serviço *</label>
         <select id="n_aba">${ABAS.map(a=>`<option value="${a}">${a}</option>`).join('')}<option value="Outro">Outro</option></select>
       </div>
@@ -646,13 +671,14 @@ async function addCard() {
     showToast('⚠ Informe o CNPJ ou CPF');
     return;
   }
+  if (!validateDocumentField('n_cnpj', 'CNPJ / CPF')) return;
   const nc = {
     id: 'usr_' + Date.now(),
     protocolo: document.getElementById('n_prot').value.trim() || '',
     data_entrada: new Date().toISOString().slice(0,10),
     tipo: document.getElementById('n_tipo').value.trim(),
     descricao: desc,
-    cnpj: cnpj,
+    cnpj: formatDocumentId(document.getElementById('n_cnpj').value),
     recebido: document.getElementById('n_recv').value.trim(),
     apresentado_por: document.getElementById('n_apres').value.trim(),
     telefone: document.getElementById('n_tel').value.trim(),

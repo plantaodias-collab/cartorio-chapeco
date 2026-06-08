@@ -692,6 +692,33 @@ function normalizeText(v) {
 function onlyDigits(v) {
   return String(v || '').replace(/\D/g, '');
 }
+function normalizeDocumentId(v) {
+  return String(v || '').toUpperCase().replace(/[^0-9A-Z]/g, '');
+}
+function formatDocumentId(v) {
+  const doc = normalizeDocumentId(v);
+  if (/^\d{11}$/.test(doc)) return doc.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4');
+  if (/^[0-9A-Z]{12}\d{2}$/.test(doc)) return doc.replace(/^([0-9A-Z]{2})([0-9A-Z]{3})([0-9A-Z]{3})([0-9A-Z]{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+  return String(v || '').trim().toUpperCase();
+}
+function validateDocumentField(id, label) {
+  const el = document.getElementById(id);
+  if (!el) return true;
+  const field = el.closest('.field');
+  field?.classList.remove('field-required-error');
+  const value = el.value.trim();
+  if (!value) return true;
+  const doc = normalizeDocumentId(value);
+  const valid = /^\d{11}$/.test(doc) || /^[0-9A-Z]{12}\d{2}$/.test(doc);
+  if (valid) {
+    el.value = formatDocumentId(doc);
+    return true;
+  }
+  field?.classList.add('field-required-error');
+  el.focus();
+  showToast(`${label} deve ser CPF com 11 digitos, CNPJ numerico ou CNPJ alfanumerico com 14 posicoes e 2 ultimos digitos numericos.`);
+  return false;
+}
 function formatShortDateTime(v) {
   if (!v) return '';
   const d = new Date(v);
@@ -1394,7 +1421,7 @@ function openEdit(id) {
 
       <div class="field s2">
         <label>CNPJ / CPF <span class="req">*</span></label>
-        <input type="text" id="e_cnpj" value="${esc(c.cnpj === '(Sem CNPJ)' ? '' : c.cnpj || '')}"${c.cnpj === '(Sem CNPJ)' ? ' disabled' : ''} placeholder="00.000.000/0001-00 ou 000.000.000-00">
+        <input type="text" id="e_cnpj" value="${esc(c.cnpj === '(Sem CNPJ)' ? '' : c.cnpj || '')}"${c.cnpj === '(Sem CNPJ)' ? ' disabled' : ''} placeholder="00.000.000/0001-00, AA.AAA.AAA/AAAA-00 ou 000.000.000-00">
         <label style="margin-top:7px;display:flex;align-items:center;gap:7px;font-size:12px;text-transform:none;letter-spacing:0;color:#64748b;cursor:pointer;font-weight:500">
           <input type="checkbox" id="e_sem_cnpj" style="width:15px;height:15px;cursor:pointer"${c.cnpj === '(Sem CNPJ)' ? ' checked' : ''}
             onchange="const f=document.getElementById('e_cnpj');f.disabled=this.checked;if(this.checked){f.value='';f.closest('.field').classList.remove('field-required-error');}else{f.focus();}">
@@ -1478,6 +1505,7 @@ function openEdit(id) {
 async function saveEdit() {
   if (!requireOperatorName()) return;
   if (!requirePaymentFields('e')) return;
+  if (!document.getElementById('e_sem_cnpj')?.checked && !validateDocumentField('e_cnpj', 'CNPJ / CPF')) return;
   const c = cards.find(x => x.id === editId);
   if (!c) return;
   c.recebido        = document.getElementById('e_recv').value.trim();
@@ -1486,7 +1514,7 @@ async function saveEdit() {
   c.situacao        = document.getElementById('e_sit').value;
   c.priority        = document.getElementById('e_prio').value;
   c.registro_primitivo = document.getElementById('e_registro_primitivo').value.trim();
-  c.cnpj            = document.getElementById('e_sem_cnpj')?.checked ? '(Sem CNPJ)' : document.getElementById('e_cnpj').value.trim();
+  c.cnpj            = document.getElementById('e_sem_cnpj')?.checked ? '(Sem CNPJ)' : formatDocumentId(document.getElementById('e_cnpj').value);
   c.valor           = document.getElementById('e_valor')?.value.trim()||'';
   c.pago            = document.getElementById('e_pago').value;
   c.forma_pagamento = document.getElementById('e_forma_pagamento').value.trim();
@@ -1575,7 +1603,7 @@ function openAdd(situacao) {
       </div>
       <div class="field s2">
         <label>CNPJ / CPF <span class="req">*</span></label>
-        <input type="text" id="n_cnpj" required placeholder="00.000.000/0001-00 ou 000.000.000-00">
+        <input type="text" id="n_cnpj" required placeholder="00.000.000/0001-00, AA.AAA.AAA/AAAA-00 ou 000.000.000-00">
         <label style="margin-top:7px;display:flex;align-items:center;gap:7px;font-size:12px;text-transform:none;letter-spacing:0;color:#64748b;cursor:pointer;font-weight:500">
           <input type="checkbox" id="n_sem_cnpj" style="width:15px;height:15px;cursor:pointer"
             onchange="const f=document.getElementById('n_cnpj');f.disabled=this.checked;if(this.checked){f.value='';f.closest('.field').classList.remove('field-required-error');}else{f.focus();}">
@@ -1694,6 +1722,7 @@ async function addCard() {
     showToast('⚠ Preencha: ' + missing.map(f => f.label).join(', '));
     return;
   }
+  if (!semCnpj && !validateDocumentField('n_cnpj', 'CNPJ / CPF')) return;
   const desc = document.getElementById('n_desc').value.trim();
   const nc = {
     id:              'usr_' + Date.now(),
@@ -1701,7 +1730,7 @@ async function addCard() {
     data_entrada:    fromDateInput(document.getElementById('n_data_entrada').value) || todayBr(),
     tipo:            document.getElementById('n_tipo').value.trim(),
     descricao:       desc,
-    cnpj:            document.getElementById('n_sem_cnpj')?.checked ? '(Sem CNPJ)' : document.getElementById('n_cnpj').value.trim(),
+    cnpj:            document.getElementById('n_sem_cnpj')?.checked ? '(Sem CNPJ)' : formatDocumentId(document.getElementById('n_cnpj').value),
     registro_primitivo: document.getElementById('n_registro_primitivo').value.trim(),
     recebido:        document.getElementById('n_recv').value.trim(),
     apresentado_por: document.getElementById('n_apres').value.trim(),
