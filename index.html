@@ -1776,6 +1776,7 @@ function showPrintOffer() {
 function printDocument(card) {
   if (!card) return;
   const dataBr = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+  const abaPrint = esc(card.aba||'').replace(/\//g, '/<wbr>');
   const NOMES = ['MARIA LAURA', 'CAMILA', 'CAROLINE', 'MARIANA', 'DANIELA', 'STEPHANIE', 'MILENA', 'JANA', 'LETICIA'];
   const recvUp = (card.recebido||'').toUpperCase().trim();
   const cbNomes = NOMES.map(n=>`<span class="cb"><span class="box">${n===recvUp?'&#10005;':'&nbsp;&nbsp;'}</span>&nbsp;${n}</span>`).join(' ');
@@ -1798,7 +1799,7 @@ body{font-family:Arial,Helvetica,sans-serif;color:#000;font-size:12px;}
 .fh-main .inst{font-size:9.5px;font-weight:600;text-transform:none;color:#444;}
 .fh-ata{flex:1;padding:5px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;}
 .fh-ata .ata-lbl{font-size:10px;}
-.fh-ata .ata-val{font-size:17px;font-weight:900;border-bottom:2px solid #000;min-width:70px;text-align:center;padding-bottom:1px;word-break:break-all;}
+.fh-ata .ata-val{font-size:16px;font-weight:900;border-bottom:2px solid #000;min-width:70px;max-width:100%;text-align:center;padding-bottom:1px;line-height:1.15;word-break:normal;overflow-wrap:normal;}
 table{width:100%;border-collapse:collapse;border:2px solid #000;border-top:none;}
 td{border:1px solid #000;padding:4px 6px;vertical-align:middle;}
 .lbl{width:36%;font-weight:800;font-size:10.5px;background:#f2f2f2;line-height:1.35;}
@@ -1830,7 +1831,7 @@ td{border:1px solid #000;padding:4px 6px;vertical-align:middle;}
     <span class="inst">Cartório de Registro Civil e PJ — Chapecó/SC</span>
     <span class="inst">Rua Assis Brasil, 305 E — Maria Goretti — Chapecó/SC</span>
   </div>
-  <div class="fh-ata">${isAta ? '<span class="ata-lbl">ATA Nº</span>' : ''}<span class="ata-val" contenteditable="true" title="Clique para editar">${card.aba||''}</span></div>
+  <div class="fh-ata">${isAta ? '<span class="ata-lbl">ATA Nº</span>' : ''}<span class="ata-val" contenteditable="true" title="Clique para editar">${abaPrint}</span></div>
 </div>
 <table>
 <tr><td class="lbl">Registro Originário nº</td><td class="val">${card.registro_primitivo||'—'}&nbsp;&nbsp;<strong>${card.tipo||''}</strong></td></tr>
