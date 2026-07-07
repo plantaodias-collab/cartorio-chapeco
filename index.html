@@ -391,6 +391,20 @@
   .card-audit { display: flex; align-items: center; gap: 5px; margin-top: 7px; padding-top: 7px; border-top: 1px dashed #d8e1ed; color: #64748b; font-size: 10.5px; font-weight: 650; position: relative; z-index: 1; }
   .card-audit::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #94a3b8; flex-shrink: 0; }
   .card:hover .card-audit::before { background: #2563eb; }
+  .history-list { display: grid; gap: 10px; max-height: 370px; overflow: auto; padding: 2px 2px 2px 0; }
+  .history-entry { border: 1px solid #dbe5f2; border-left: 4px solid #2563eb; border-radius: 10px; background: #fff; padding: 10px 11px; box-shadow: 0 1px 3px rgba(15,23,42,0.06); }
+  .history-entry.empty { border-left-color: #94a3b8; background: #f8fafc; }
+  .history-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 7px; }
+  .history-time { color: #0f1f35; font-size: 12px; font-weight: 850; line-height: 1.25; }
+  .history-user { color: #475569; font-size: 11px; font-weight: 750; white-space: nowrap; }
+  .history-changes { display: grid; gap: 5px; }
+  .history-change { display: grid; grid-template-columns: minmax(115px, 0.38fr) minmax(0, 1fr); gap: 8px; align-items: start; font-size: 12px; line-height: 1.35; }
+  .history-label { color: #334155; font-weight: 800; }
+  .history-values { color: #0f172a; overflow-wrap: anywhere; }
+  .history-old { color: #64748b; text-decoration: line-through; text-decoration-thickness: 1px; text-decoration-color: #cbd5e1; }
+  .history-arrow { color: #94a3b8; font-weight: 800; padding: 0 5px; }
+  .history-new { color: #166534; font-weight: 750; }
+  .history-note { color: #64748b; font-size: 12px; }
   @keyframes boardFadeIn {
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
@@ -450,6 +464,7 @@
   @media (max-width: 1500px) { .header-filters select { flex-basis: 120px; } }
   @media (max-width: 760px) { body { font-size: 13px; } header { padding: 10px; align-items: stretch; } .brand { width: 100%; } .brand h1 { font-size: 15px; } .brand p { font-size: 11px; } .controls { width: 100%; gap: 6px; grid-template-columns: 1fr 1fr; } .controls input, .controls select { flex: 1 1 150px; min-width: 0; } #searchInput { width: auto; flex-basis: 100%; grid-column: 1 / -1; } .primary-actions { position: sticky; bottom: 0; z-index: 150; width: 100%; background: #1e3a5f; padding-top: 6px; } .primary-actions .btn { flex: 1 1 auto; padding: 0 10px; } .stats-bar { padding: 8px 10px; } .board { padding: 12px 10px 90px; gap: 10px; scroll-snap-type: x mandatory; min-height: calc(100vh - 250px); } .column { width: calc(100vw - 32px); min-width: calc(100vw - 32px); max-height: calc(100vh - 285px); scroll-snap-align: start; } .modal { max-height: 94vh; } .fgrid { grid-template-columns: 1fr; } .fgrid .s2 { grid-column: auto; } }
   @media (max-width: 760px) { .filter-group { width: 100%; flex-wrap: wrap; } .filter-group select { flex: 1 1 130px; max-width: none; } .filter-label { width: 100%; } .report-metrics { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 760px) { .history-head { display: grid; gap: 2px; } .history-user { white-space: normal; } .history-change { grid-template-columns: 1fr; gap: 2px; } }
 </style>
 </head>
 <body>
@@ -805,9 +820,10 @@ function diffCards(before, after) {
   const labels = {
     situacao: 'Situação', priority: 'Prioridade', recebido: 'Recebido por',
     apresentado_por: 'Apresentado por', telefone: 'Telefone', observacoes: 'Observações',
-    pago: 'Pago', forma_pagamento: 'Forma de pagamento', registro_primitivo: 'Registro primitivo',
+    pago: 'Pagamento', forma_pagamento: 'Forma de pagamento', valor: 'Valor',
+    registro_primitivo: 'Registro primitivo', cnpj: 'CNPJ / CPF',
     resp_entrega: 'Responsável entrega', nome_retirou: 'Quem retirou',
-    situacao_retorno: 'Situação retorno', data_conclusao: 'Data conclusão',
+    situacao_retorno: 'Situação do retorno', data_conclusao: 'Data conclusão',
     data_nd: 'Data ND', data_retorno: 'Data retorno', data_retirada: 'Data retirada'
   };
   return Object.keys(labels)
@@ -1870,20 +1886,34 @@ function exportBackup() {
   URL.revokeObjectURL(a.href); a.remove();
   showToast('Backup gerado neste computador.');
 }
+function historyValue(v) {
+  const text = String(v ?? '').trim();
+  return text ? esc(text) : '<span class="history-note">vazio</span>';
+}
+function renderHistoryChange(ch) {
+  const label = esc(ch.label || ch.field || 'Campo');
+  return `<div class="history-change">
+    <div class="history-label">${label}</div>
+    <div class="history-values"><span class="history-old">${historyValue(ch.before)}</span><span class="history-arrow">→</span><span class="history-new">${historyValue(ch.after)}</span></div>
+  </div>`;
+}
 function renderHistory(id) {
   const rows = auditEntries
     .filter(a => a && a.id === id)
     .sort((a,b) => String(b.savedAt || '').localeCompare(String(a.savedAt || '')))
-    .slice(0, 6);
+    .slice(0, 10);
   if (!rows.length) return '<div class="field s2"><label>Histórico</label><div class="ro">Nenhuma alteração registrada ainda.</div></div>';
-  return `<div class="field s2"><label>Histórico recente</label><div class="ro">${
+  return `<div class="field s2"><label>Histórico recente</label><div class="ro history-list">${
     rows.map(a => {
-      const when = a.savedAt ? new Date(a.savedAt).toLocaleString('pt-BR') : '';
-      const who = a.updatedBy ? ` por ${esc(a.updatedBy)}` : '';
+      const when = a.savedAt ? new Date(a.savedAt).toLocaleString('pt-BR') : 'Data não registrada';
+      const who = a.updatedBy || 'Operador não informado';
       const changes = Array.isArray(a.changes) && a.changes.length
-        ? a.changes.slice(0, 4).map(ch => `${esc(ch.label || ch.field)}: ${esc(ch.before || 'vazio')} -> ${esc(ch.after || 'vazio')}`).join('<br>')
-        : 'Registro salvo';
-      return `<div style="margin-bottom:10px"><strong>${esc(when)}${who}</strong><br>${changes}</div>`;
+        ? `<div class="history-changes">${a.changes.map(renderHistoryChange).join('')}</div>`
+        : '<div class="history-note">Salvo sem alteração nos campos acompanhados.</div>';
+      return `<div class="history-entry${Array.isArray(a.changes) && a.changes.length ? '' : ' empty'}">
+        <div class="history-head"><div class="history-time">${esc(when)}</div><div class="history-user">${esc(who)}</div></div>
+        ${changes}
+      </div>`;
     }).join('')
   }</div></div>`;
 }
