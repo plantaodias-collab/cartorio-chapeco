@@ -1018,7 +1018,7 @@ function setupFirebase() {
   if (!url.startsWith('https://') || !url.includes('firebaseio.com')) {
     err.style.display = 'block'; return;
   }
-  if (!parseAuthConfig(authConfig)) {
+  if (authConfig && !parseAuthConfig(authConfig)) {
     err.textContent = 'Config Firebase Auth invalida. Cole um JSON com apiKey, authDomain e projectId.';
     err.style.display = 'block'; return;
   }
@@ -1042,12 +1042,6 @@ function connectFirebase(url) {
   setSyncStatus('loading', 'Conectando ao banco compartilhado...');
   try {
     const authConfig = parseAuthConfig(localStorage.getItem(AUTH_CONFIG_KEY) || '');
-    if (!authConfig) {
-      document.getElementById('loading').classList.add('hidden');
-      setSyncStatus('error', 'Autenticacao obrigatoria. Configure o Firebase Auth para continuar.');
-      showSetup();
-      return;
-    }
     const config = { ...(authConfig || {}), databaseURL: url };
     try { firebaseApp = firebase.app(); } catch(e) { firebaseApp = firebase.initializeApp(config); }
     db = firebase.database(firebaseApp);
@@ -1065,6 +1059,8 @@ function connectFirebase(url) {
           setSyncStatus('loading', 'Aguardando login...');
         }
       });
+    } else {
+      listenFirebase();
     }
   } catch(e) {
     document.getElementById('loading').classList.add('hidden');
@@ -1152,12 +1148,8 @@ async function saveItem(type, payload, before = null) {
   document.getElementById('firebaseUrl').value = savedUrl;
   document.getElementById('firebaseAuthConfig').value = localStorage.getItem(AUTH_CONFIG_KEY) || '';
   const savedAuthConfig = parseAuthConfig(localStorage.getItem(AUTH_CONFIG_KEY) || '');
-  if (savedAuthConfig) {
-    document.getElementById('setup-screen').classList.add('hidden');
-    connectFirebase(savedUrl);
-  } else {
-    showSetup();
-  }
+  document.getElementById('setup-screen').classList.add('hidden');
+  connectFirebase(savedUrl);
 })();
 
 // ═══════════════════════════════════════════════════════
