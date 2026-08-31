@@ -465,6 +465,67 @@
   @media (max-width: 760px) { body { font-size: 13px; } header { padding: 10px; align-items: stretch; } .brand { width: 100%; } .brand h1 { font-size: 15px; } .brand p { font-size: 11px; } .controls { width: 100%; gap: 6px; grid-template-columns: 1fr 1fr; } .controls input, .controls select { flex: 1 1 150px; min-width: 0; } #searchInput { width: auto; flex-basis: 100%; grid-column: 1 / -1; } .primary-actions { position: sticky; bottom: 0; z-index: 150; width: 100%; background: #1e3a5f; padding-top: 6px; } .primary-actions .btn { flex: 1 1 auto; padding: 0 10px; } .stats-bar { padding: 8px 10px; } .board { padding: 12px 10px 90px; gap: 10px; scroll-snap-type: x mandatory; min-height: calc(100vh - 250px); } .column { width: calc(100vw - 32px); min-width: calc(100vw - 32px); max-height: calc(100vh - 285px); scroll-snap-align: start; } .modal { max-height: 94vh; } .fgrid { grid-template-columns: 1fr; } .fgrid .s2 { grid-column: auto; } }
   @media (max-width: 760px) { .filter-group { width: 100%; flex-wrap: wrap; } .filter-group select { flex: 1 1 130px; max-width: none; } .filter-label { width: 100%; } .report-metrics { grid-template-columns: 1fr 1fr; } }
   @media (max-width: 760px) { .history-head { display: grid; gap: 2px; } .history-user { white-space: normal; } .history-change { grid-template-columns: 1fr; gap: 2px; } }
+  /* Fase 1: densidade, responsividade e leitura operacional */
+  html, body { max-width: 100%; overflow-x: hidden; }
+  .header-top { min-width: 0; }
+  .header-top #searchInput { min-width: 0; }
+  .header-filters { min-width: 0; }
+  .view-tabs { flex-wrap: wrap; }
+  .view-tab { white-space: nowrap; }
+  .board { width: 100%; max-width: 100vw; overscroll-behavior-x: contain; }
+  .column { flex: 0 1 326px; }
+  .column:last-child { margin-right: 2px; }
+  .card-status { display:inline-flex; align-items:center; gap:4px; margin:0 0 6px; padding:2px 7px; border-radius:999px; font-size:10px; font-weight:800; color:#334155; background:#f1f5f9; border:1px solid #dbe5f0; }
+  .card-status.status-active { color:#1d4ed8; background:#eff6ff; border-color:#bfdbfe; }
+  .card-status.status-nd { color:#b91c1c; background:#fff1f2; border-color:#fecdd3; }
+  .card-status.status-return { color:#9a3412; background:#fff7ed; border-color:#fed7aa; }
+  .card-status.status-done { color:#166534; background:#f0fdf4; border-color:#bbf7d0; }
+  .card-status.status-archived { color:#475569; background:#f8fafc; border-color:#cbd5e1; }
+  .card-identifier { display:flex; align-items:center; gap:5px; margin:-2px 0 7px; color:#475569; font-size:11px; font-weight:750; }
+  .card-identifier strong { color:#0f1f35; }
+  .card-workline { display:flex; flex-wrap:wrap; gap:4px; margin:-2px 0 8px; }
+  .work-chip { display:inline-flex; align-items:center; gap:4px; padding:3px 6px; border-radius:6px; font-size:10.5px; font-weight:700; color:#475569; background:#f8fafc; border:1px solid #e2e8f0; }
+  .work-chip.warn { color:#9a3412; background:#fff7ed; border-color:#fed7aa; }
+  .work-chip.danger { color:#b91c1c; background:#fff1f2; border-color:#fecdd3; }
+  .card.card-sector-rcpn { border-left-color:#7c9fe8; }
+  .card.card-sector-rcpj { border-left-color:#69a987; }
+  .card.card-sector-rtd { border-left-color:#9b82c9; }
+  .card.card-sector-rcpn .card-aba { color:#315ea8; }
+  .card.card-sector-rcpj .card-aba { color:#28734d; }
+  .card.card-sector-rtd .card-aba { color:#684b96; }
+  .setup-card { overflow-wrap:anywhere; }
+  .setup-card code { word-break:break-word; }
+  button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible, .card:focus-visible { outline:3px solid #93c5fd; outline-offset:2px; }
+  @media (max-width: 1100px) {
+    header { padding-left:14px; padding-right:14px; }
+    .header-top { display:grid; grid-template-columns:minmax(180px, 1fr) auto; gap:8px; }
+    .header-top .operator-wrap { grid-column:2; grid-row:1; }
+    .header-top #searchInput { grid-column:1 / -1; grid-row:2; }
+    .header-cta { grid-column:1 / -1; grid-row:3; justify-content:flex-end; }
+    .header-filters { align-items:stretch; }
+    .filter-actions { margin-left:0; }
+    .column { flex-basis:300px; min-width:300px; }
+  }
+  @media (max-width: 760px) {
+    #setup-screen { align-items:flex-start; overflow-y:auto; }
+    .setup-card { margin:8px 0; padding:22px 18px; }
+    .header-top { display:flex; flex-wrap:wrap; gap:7px; }
+    .header-top .brand { flex:1 1 100%; }
+    .header-top .operator-wrap, .header-top #searchInput, .header-cta { flex:1 1 100%; }
+    .header-top #searchInput { order:3; }
+    .header-cta { order:4; justify-content:stretch; }
+    .header-cta .btn { flex:1; }
+    .operator-wrap { justify-content:stretch; }
+    .operator-wrap #operatorName { flex:1; width:auto; }
+    .header-filters { overflow:hidden; }
+    .view-tabs { width:100%; overflow-x:auto; flex-wrap:nowrap; border-radius:10px; }
+    .filter-group { min-width:0; }
+    .filter-actions { width:100%; overflow-x:auto; }
+    .filter-actions .btn { flex:1 0 auto; }
+    .stats-bar { max-width:100vw; }
+    .board { padding-left:10px; padding-right:10px; }
+    .column { flex:0 0 calc(100vw - 28px); width:calc(100vw - 28px); min-width:calc(100vw - 28px); }
+  }
 </style>
 </head>
 <body>
@@ -480,7 +541,7 @@
     </div>
     <div class="step">
       <div class="step-num">Passo 2 — Criar Realtime Database</div>
-      <p>Menu lateral: <strong>"Criar" → "Realtime Database"</strong> → <strong>"Criar banco de dados"</strong> → localização: <code>us-central1</code> → <strong>"Iniciar no modo de teste"</strong> → <strong>"Ativar"</strong>.</p>
+     <p>Menu lateral: <strong>"Criar" → "Realtime Database"</strong> → <strong>"Criar banco de dados"</strong> → selecione a região → <strong>"Ativar"</strong>. Depois publique as regras deste projeto; não use o modo de teste.</p>
     </div>
     <div class="step">
       <div class="step-num">Passo 3 — Copiar a URL e colar abaixo</div>
@@ -494,8 +555,8 @@
     </div>
     <button class="setup-btn" onclick="setupFirebase()">✓ Conectar e abrir o painel</button>
     <div class="step">
-      <div class="step-num">Opcional - Ativar login</div>
-      <p>Cole aqui a configuracao do app Web do Firebase para habilitar login por e-mail e senha. Se ficar vazio, o painel continua abrindo como hoje.</p>
+      <div class="step-num">Passo 4 - Configurar login obrigatorio</div>
+      <p>Ative <strong>Authentication → Email/Password</strong> no Firebase e cole aqui a configuracao do app Web. Sem login, o painel nao conecta ao banco.</p>
       <label class="input-label">Config Firebase Auth em JSON</label>
       <textarea class="setup-input" id="firebaseAuthConfig" placeholder='{"apiKey":"...","authDomain":"cartorio-chapeco.firebaseapp.com","projectId":"cartorio-chapeco"}'></textarea>
     </div>
@@ -548,13 +609,16 @@
     <div class="header-cta">
       <button class="btn btn-primary" onclick="openAdd()">+ Novo</button>
       <button class="btn btn-ghost" id="logoutBtn" onclick="signOut()" style="display:none">Sair</button>
-      <button class="btn-sm" onclick="showSetup()" title="Configurações do banco">⚙</button>
+      <button class="btn-sm" onclick="showSetup()" title="Configurações do banco" aria-label="Abrir configurações do banco">⚙</button>
     </div>
   </div>
   <!-- Linha 2: filtros + ações -->
   <div class="header-filters">
     <div class="view-tabs" id="viewTabs">
-      <button type="button" class="view-tab active" data-view="all" onclick="setViewMode('all')">Todos</button>
+      <button type="button" class="view-tab active" data-view="all" onclick="setViewMode('all')">Ativos</button>
+      <button type="button" class="view-tab" data-view="mine" onclick="setViewMode('mine')" title="Protocolos atribuídos ao operador atual">Minha fila</button>
+      <button type="button" class="view-tab" data-view="overdue" onclick="setViewMode('overdue')" title="Protocolos vencidos ou parados há 30 dias ou mais">Vencidos</button>
+      <button type="button" class="view-tab" data-view="unassigned" onclick="setViewMode('unassigned')" title="Protocolos sem responsável">Sem responsável</button>
       <button type="button" class="view-tab" data-view="atas" onclick="setViewMode('atas')">Atas</button>
       <button type="button" class="view-tab" data-view="pending" onclick="setViewMode('pending')">Pendências</button>
       <button type="button" class="view-tab" data-view="today" onclick="setViewMode('today')">Hoje</button>
@@ -598,11 +662,11 @@
     <select id="colJump" onchange="jumpColumn(this.value)"><option value="">Ir para coluna</option></select>
     </div>
     <div class="filter-actions primary-actions">
-      <button class="btn btn-ghost"   onclick="resetFilters()">Limpar</button>
+      <button class="btn btn-ghost"   onclick="resetFilters()" aria-label="Limpar filtros">Limpar</button>
       <button class="btn btn-ghost"   onclick="showReport()">Relatório</button>
       <button class="btn btn-ghost"   onclick="exportBackup()">Backup</button>
       <button class="btn btn-ghost"   onclick="exportCsv()">CSV</button>
-      <button class="btn btn-ghost focus-keep" id="focusBtn" onclick="toggleFocusMode()">Foco</button>
+      <button class="btn btn-ghost focus-keep" id="focusBtn" onclick="toggleFocusMode()" aria-label="Alternar modo foco">Foco</button>
     </div>
   </div>
 </header>
@@ -622,7 +686,7 @@
   <div class="modal">
     <div class="mhead">
       <h2 id="mTitle">Documento</h2>
-      <button class="mclose" onclick="closeModal()">✕</button>
+      <button class="mclose" onclick="closeModal()" title="Fechar janela" aria-label="Fechar janela">✕</button>
     </div>
     <div class="mbody" id="mBody"></div>
     <div class="mfoot" id="mFoot"></div>
@@ -631,8 +695,10 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="kanban_data.js"></script>
 <script>
+// Os dados operacionais nao ficam mais embutidos no site publico.
+// A base deve ser migrada para o Firebase e lida somente apos autenticacao.
+const INITIAL_DATA = [];
 // ═══════════════════════════════════════════════════════
 // CONSTANTES
 // ═══════════════════════════════════════════════════════
@@ -792,6 +858,33 @@ function daysOpen(c) {
   if (start === Number.MAX_SAFE_INTEGER) return 0;
   return Math.max(0, Math.floor((Date.now() - start) / 86400000));
 }
+function daysSinceLastAction(c) {
+  if (['Concluído','Arquivado'].includes(c.situacao)) return 0;
+  const raw = c.updatedAt || c.data_entrada;
+  const stamp = c.updatedAt && !/^\d{2}\/\d{2}\/\d{4}$/.test(String(c.updatedAt))
+    ? new Date(c.updatedAt).getTime() : parseDateValue(raw);
+  if (!Number.isFinite(stamp) || stamp === Number.MAX_SAFE_INTEGER) return 0;
+  return Math.max(0, Math.floor((Date.now() - stamp) / 86400000));
+}
+function isOverdue(c) {
+  if (['Concluído','Arquivado'].includes(c.situacao)) return false;
+  const prazo = c.prazo === '' || c.prazo == null ? null : Number(c.prazo);
+  return (Number.isFinite(prazo) && prazo <= 0) || daysOpen(c) >= 30;
+}
+function nextActionText(c) {
+  if (c.situacao === 'Nota Devolutiva') return 'Acompanhar exigência';
+  if (c.situacao === 'Aguard. Retorno ND') return 'Aguardar retorno';
+  if (c.situacao === 'Concluído' && !c.data_retirada) return 'Registrar retirada';
+  if (c.situacao === 'Arquivado') return 'Arquivado';
+  if (!c.recebido) return 'Definir responsável';
+  if (!paymentState(c) || paymentState(c) === 'Não') return 'Conferir pagamento';
+  if (needsAttention(c)) return 'Priorizar análise';
+  return 'Prosseguir análise';
+}
+function sectorClass(c) {
+  const aba = normalizeText(c.aba);
+  return aba.startsWith('rcpn') ? 'card-sector-rcpn' : aba.startsWith('rcpj') || aba.startsWith('pj') ? 'card-sector-rcpj' : aba.startsWith('rtd') ? 'card-sector-rtd' : '';
+}
 function needsAttention(c) {
   return !['Concluído','Arquivado'].includes(c.situacao) && (c.priority === 'Alta' || daysOpen(c) >= 30 || (c.prazo != null && c.prazo <= 30));
 }
@@ -925,7 +1018,7 @@ function setupFirebase() {
   if (!url.startsWith('https://') || !url.includes('firebaseio.com')) {
     err.style.display = 'block'; return;
   }
-  if (authConfig && !parseAuthConfig(authConfig)) {
+  if (!parseAuthConfig(authConfig)) {
     err.textContent = 'Config Firebase Auth invalida. Cole um JSON com apiKey, authDomain e projectId.';
     err.style.display = 'block'; return;
   }
@@ -949,6 +1042,12 @@ function connectFirebase(url) {
   setSyncStatus('loading', 'Conectando ao banco compartilhado...');
   try {
     const authConfig = parseAuthConfig(localStorage.getItem(AUTH_CONFIG_KEY) || '');
+    if (!authConfig) {
+      document.getElementById('loading').classList.add('hidden');
+      setSyncStatus('error', 'Autenticacao obrigatoria. Configure o Firebase Auth para continuar.');
+      showSetup();
+      return;
+    }
     const config = { ...(authConfig || {}), databaseURL: url };
     try { firebaseApp = firebase.app(); } catch(e) { firebaseApp = firebase.initializeApp(config); }
     db = firebase.database(firebaseApp);
@@ -966,8 +1065,6 @@ function connectFirebase(url) {
           setSyncStatus('loading', 'Aguardando login...');
         }
       });
-    } else {
-      listenFirebase();
     }
   } catch(e) {
     document.getElementById('loading').classList.add('hidden');
@@ -1054,8 +1151,13 @@ async function saveItem(type, payload, before = null) {
   if (!localStorage.getItem(FIREBASE_KEY)) localStorage.setItem(FIREBASE_KEY, savedUrl);
   document.getElementById('firebaseUrl').value = savedUrl;
   document.getElementById('firebaseAuthConfig').value = localStorage.getItem(AUTH_CONFIG_KEY) || '';
-  document.getElementById('setup-screen').classList.add('hidden');
-  connectFirebase(savedUrl);
+  const savedAuthConfig = parseAuthConfig(localStorage.getItem(AUTH_CONFIG_KEY) || '');
+  if (savedAuthConfig) {
+    document.getElementById('setup-screen').classList.add('hidden');
+    connectFirebase(savedUrl);
+  } else {
+    showSetup();
+  }
 })();
 
 // ═══════════════════════════════════════════════════════
@@ -1085,7 +1187,11 @@ function applyFilters() {
   const sit  = document.getElementById('fSit').value;
   const pago = document.getElementById('fPago').value;
   vis = new Set(cards.filter(c => {
+    if (viewMode !== 'archived' && c.situacao === 'Arquivado') return false;
     if (viewMode === 'atas' && !isAta(c)) return false;
+    if (viewMode === 'mine' && normalizeText(c.recebido) !== normalizeText(document.getElementById('operatorName').value)) return false;
+    if (viewMode === 'overdue' && !isOverdue(c)) return false;
+    if (viewMode === 'unassigned' && String(c.recebido || '').trim()) return false;
     if (viewMode === 'pending' && (['Concluído','Arquivado'].includes(c.situacao) || !hasPendingIssue(c))) return false;
     if (viewMode === 'today' && !isTodayWork(c)) return false;
     if (viewMode === 'archived' && c.situacao !== 'Arquivado') return false;
@@ -1163,6 +1269,15 @@ function quickFilter(kind) {
   } else if (kind === 'today') {
     setViewMode('today', false);
     vis = new Set(cards.filter(isTodayWork).map(c => c.id));
+  } else if (kind === 'mine') {
+    setViewMode('mine', false);
+    vis = new Set(cards.filter(c => c.situacao !== 'Arquivado' && normalizeText(c.recebido) === normalizeText(document.getElementById('operatorName').value)).map(c => c.id));
+  } else if (kind === 'overdue') {
+    setViewMode('overdue', false);
+    vis = new Set(cards.filter(isOverdue).map(c => c.id));
+  } else if (kind === 'unassigned') {
+    setViewMode('unassigned', false);
+    vis = new Set(cards.filter(c => c.situacao !== 'Arquivado' && !String(c.recebido || '').trim()).map(c => c.id));
   }
   syncAtaMode();
   renderBoard(); renderStats();
@@ -1192,7 +1307,7 @@ function renderBoard() {
         <div class="col-name"><div class="col-bar" style="background:${col.color}"></div>${col.label}</div>
         <div class="col-actions">
           <span class="col-cnt">${cc.length}</span>
-          <button class="col-toggle" onclick="toggleColumn('${escAttr(col.id)}')" title="${collapsed ? 'Expandir coluna' : 'Recolher coluna'}">${collapsed ? '›' : '‹'}</button>
+          <button class="col-toggle" onclick="toggleColumn('${escAttr(col.id)}')" title="${collapsed ? 'Expandir coluna' : 'Recolher coluna'}" aria-label="${collapsed ? 'Expandir coluna' : 'Recolher coluna'}">${collapsed ? '›' : '‹'}</button>
         </div>
       </div>
       <div class="col-body" id="cb-${eid(col.id)}"
@@ -1246,6 +1361,15 @@ function renderCard(c, compact = false) {
   const payClass = pago === 'Não' ? 'Nao' : (pago || 'NI');
   const payLabel = pago || 'N/I';
   const ata = isAta(c);
+  const statusClass = c.situacao === 'Nota Devolutiva' ? 'status-nd' : c.situacao === 'Aguard. Retorno ND' ? 'status-return' : c.situacao === 'Concluído' ? 'status-done' : c.situacao === 'Arquivado' ? 'status-archived' : 'status-active';
+  const identifier = c.protocolo ? `<span class="card-identifier">Protocolo <strong>${esc(c.protocolo)}</strong></span>` : '';
+  const paused = daysSinceLastAction(c);
+  const workline = !compact ? `<div class="card-workline">
+    ${c.recebido ? `<span class="work-chip" title="Responsável atual">👤 ${esc(c.recebido)}</span>` : `<span class="work-chip danger" title="Nenhum responsável atribuído">⚠ Sem responsável</span>`}
+    ${c.prazo != null && c.prazo !== '' ? `<span class="work-chip ${Number(c.prazo) <= 0 ? 'danger' : 'warn'}" title="Prazo informado">⏱ ${esc(c.prazo)}d</span>` : ''}
+    ${paused > 0 ? `<span class="work-chip ${paused >= 30 ? 'danger' : paused >= 7 ? 'warn' : ''}" title="Tempo desde a última alteração">⏸ Parado há ${paused}d</span>` : ''}
+    <span class="work-chip" title="Próxima ação">→ ${esc(nextActionText(c))}</span>
+  </div>` : '';
   const chips = ata && !['Concluído','Arquivado'].includes(c.situacao)
     ? pendingItems(c).map(item => `<span class="ata-chip ${item.tone}">${esc(item.label)}</span>`).join('')
     : '';
@@ -1259,9 +1383,9 @@ function renderCard(c, compact = false) {
     pzEl = `<span class="${cls}">${c.prazo}d</span>`;
   }
   return `
-    <div class="card prio-${c.priority}${ata ? ' card-ata' : ''}${compact ? ' archived-compact' : ''}" id="card-${c.id}"
+    <div class="card prio-${c.priority}${ata ? ' card-ata' : ''}${compact ? ' archived-compact' : ''} ${sectorClass(c)}" id="card-${c.id}"
          draggable="${hasOperatorName() ? 'true' : 'false'}" ondragstart="dStart(event,'${c.id}')" ondragend="dEnd()"
-         onclick="openEdit('${c.id}')">
+         onclick="openEdit('${c.id}')" tabindex="0" role="button" aria-label="Abrir ${escAttr(desc)}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openEdit('${c.id}')}" >
       <div class="card-top">
         <div class="card-aba">${esc(c.aba)}</div>
         <div class="card-badges">
@@ -1269,7 +1393,10 @@ function renderCard(c, compact = false) {
           <div class="pchip ${c.priority}">${c.priority}</div>
         </div>
       </div>
+      ${!compact ? `<div class="card-status ${statusClass}">${esc(c.situacao || 'Sem situação')}</div>` : ''}
+      ${identifier}
       <div class="card-desc">${esc(desc)}</div>
+      ${workline}
       ${chips ? `<div class="ata-pending-chips">${chips}</div>` : ''}
       ${extra ? `<div class="card-extra">${extra}</div>` : ''}
       <div class="card-meta">
