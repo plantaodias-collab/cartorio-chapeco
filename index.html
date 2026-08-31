@@ -555,8 +555,8 @@
     </div>
     <button class="setup-btn" onclick="setupFirebase()">✓ Conectar e abrir o painel</button>
     <div class="step">
-      <div class="step-num">Passo 4 - Configurar login obrigatorio</div>
-      <p>Ative <strong>Authentication → Email/Password</strong> no Firebase e cole aqui a configuracao do app Web. Sem login, o painel nao conecta ao banco.</p>
+      <div class="step-num">Opcional — Configurar login</div>
+      <p>Se desejar usar login, ative <strong>Authentication → Email/Password</strong> no Firebase e cole aqui a configuracao do app Web. Sem essa configuracao, o painel abre no modo operacional anterior.</p>
       <label class="input-label">Config Firebase Auth em JSON</label>
       <textarea class="setup-input" id="firebaseAuthConfig" placeholder='{"apiKey":"...","authDomain":"cartorio-chapeco.firebaseapp.com","projectId":"cartorio-chapeco"}'></textarea>
     </div>
@@ -1014,17 +1014,14 @@ function requireOperatorName() {
 function setupFirebase() {
   const url = document.getElementById('firebaseUrl').value.trim();
   const authConfig = document.getElementById('firebaseAuthConfig').value.trim();
+  const parsedAuthConfig = parseAuthConfig(authConfig);
   const err = document.getElementById('setupError');
   if (!url.startsWith('https://') || !url.includes('firebaseio.com')) {
     err.style.display = 'block'; return;
   }
-  if (authConfig && !parseAuthConfig(authConfig)) {
-    err.textContent = 'Config Firebase Auth invalida. Cole um JSON com apiKey, authDomain e projectId.';
-    err.style.display = 'block'; return;
-  }
   err.style.display = 'none';
   localStorage.setItem(FIREBASE_KEY, url);
-  if (authConfig) localStorage.setItem(AUTH_CONFIG_KEY, authConfig);
+  if (parsedAuthConfig) localStorage.setItem(AUTH_CONFIG_KEY, JSON.stringify(parsedAuthConfig));
   else localStorage.removeItem(AUTH_CONFIG_KEY);
   document.getElementById('setup-screen').classList.add('hidden');
   connectFirebase(url);
