@@ -1,0 +1,7 @@
+# Dados operacionais e credenciais nunca devem entrar no repositorio.
+kanban_data.js
+kanban_data-private-backup.js
+*.service-account.json
+.env
+.env.*
+!.env.example

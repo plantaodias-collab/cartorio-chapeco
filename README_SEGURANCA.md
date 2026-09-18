@@ -1,51 +1,66 @@
 # Seguranca do painel
 
-Este projeto usa Firebase Realtime Database. Nao publique regras restritivas sem antes cadastrar os usuarios, porque o painel atual ainda nao tem tela de login.
+Este projeto usa Firebase Realtime Database. O banco de producao esta temporariamente bloqueado para leitura e gravacao enquanto configuramos contas e login. A pagina exige Firebase Authentication; mesmo apos sua publicacao, o painel permanece sem dados ate concluirmos contas, migracao e regras.
 
 ## Passos recomendados
 
-1. Mantenha um backup local antes de qualquer mudanca nas regras.
-2. Ative Firebase Authentication no projeto.
-3. Cadastre apenas os e-mails autorizados da equipe.
-4. Adicione login no painel.
-5. Publique as regras em `firebase.rules.json`.
-6. Teste leitura, criacao, edicao e movimentacao de cartoes com um usuario autorizado.
+1. Mantenha o backup fora do repositorio e confirme que ele pode ser lido antes de qualquer migracao.
+2. Ative Firebase Authentication e crie individualmente as contas autorizadas.
+3. Desative criacao de contas por usuarios finais; confirme que somente a equipe autorizada possui conta.
+4. Publique o painel sem a fonte estatica, mantendo o banco bloqueado.
+5. Revise as regras em `firebase.rules.json` e obtenha autorizacao expressa antes de substituir o bloqueio global, pois isso libera dados a usuarios autenticados.
+6. Depois da autorizacao, publique as regras e migre os dados do backup protegido usando uma sessao autenticada; valide a contagem e o funcionamento.
+7. Teste leitura, criacao, edicao e movimentacao com uma conta autorizada e confirme que uma conta nao autorizada nao acessa os dados.
+8. Se algum teste ou regra falhar, reaplique bloqueio global de leitura e gravacao.
 
 ## O que ja foi preparado
 
 - Botao `Backup` no painel para exportar os cartoes vistos pelo navegador.
 - Metadados `updatedAt` e `updatedBy` nas proximas gravacoes.
 - Campo `Seu nome` no painel para preencher o `updatedBy` neste computador.
-- Suporte preparado para Firebase Authentication: ao colar a config Web do Firebase no setup, o painel passa a pedir login por e-mail/senha.
+- Firebase Authentication obrigatorio no codigo do painel; o acesso aos dados so deve ser liberado depois da configuracao das contas e das regras.
 - Busca tolerante a acentos e formatos de telefone/documentos.
 - Ordenacao dos cartoes por prioridade, prazo e data de entrada.
 - Alerta antes de cadastrar um documento que parece duplicado.
+- Duplicacao de documento para reaproveitar identificacao e dados de atendimento; pagamento, observacoes e datas iniciam em branco.
+- Atribuicao em lote usando a mesma rotina central de salvamento e auditoria.
+- Destaque visual para registros com `prazo` numerico entre zero e cinco dias; `data_conclusao` nao e tratada como prazo final.
 - Filtros rapidos de atencao, documentos abertos e notas devolutivas/retornos.
 - Exportacao CSV dos documentos filtrados para abrir no Excel.
 - Historico recente no modal de cada documento, baseado em `kanban/audit`.
 - Arquivamento exige data de retirada, quem retirou e responsavel pela entrega.
 - Navegacao rapida entre colunas, botoes principais fixos no mobile e layout ajustado para telas pequenas.
 - Tela de relatorio com documentos por responsavel, tempo medio em aberto, concluidos no mes e documentos parados.
-- Escrita tentativa em `kanban/audit` para registrar futuras alteracoes sem bloquear o salvamento principal.
-- Regras de banco preparadas em `firebase.rules.json`, ainda nao aplicadas.
+- Escrita tentativa em `kanban/audit` para registrar futuras alteracoes sem bloquear o salvamento principal. E um historico operacional gravado pelo cliente, nao um log de seguranca confiavel.
+- Os novos registros de auditoria omitem valores de campos pessoais/financeiros, mantendo a indicacao de quais campos mudaram.
+- Regras de autenticacao preparadas em `firebase.rules.json`; nao as publique antes de configurar as contas autorizadas e desativar o cadastro publico.
 
-## Importar usuarios do Chat Interno
+## Primeiro acesso e troca de senha
 
-Depois de ativar `Authentication > Sign-in method > Email/Password` no Firebase Console, copie a `apiKey` da configuracao Web do app Firebase e rode:
+Use uma conta individual por pessoa, identificada pelo e-mail institucional ou outro e-mail confirmado. O Firebase Authentication usa e-mail/senha; prenomes isolados nao sao identificadores de login neste painel. O campo `recebido` da tabela e apenas um responsavel registrado no atendimento e nao comprova que essa pessoa tenha acesso ao sistema.
 
-```powershell
-$env:FIREBASE_API_KEY = "cole-a-apiKey-aqui"
-node scripts/import-auth-users.js
-```
+Nao reutilize senha de outro sistema nem distribua uma senha comum como `123456`: qualquer pessoa que a conheca poderia entrar como outra. Crie apenas as contas autorizadas no Firebase Authentication e, para cada uma, envie o link individual de redefinicao/definicao de senha. A tela de login possui essa opcao e apresenta uma resposta generica para nao revelar se um e-mail esta cadastrado. O link permite que cada usuario defina sua propria senha antes de entrar.
 
-Por padrao o script le `C:/ChatInterno/data/usuarios.json`, importa somente usuarios ativos e nao imprime senhas no terminal. Se o arquivo estiver em outro local:
+Para um fluxo administrativo de senha temporaria com troca obrigatoria apos o primeiro login, seria necessario implementar uma verificacao de primeiro acesso confiavel no servidor (Firebase Admin SDK); nao basta gravar uma flag no navegador. Esse fluxo ainda nao esta implementado. A configuracao Email/Password deve permanecer sem cadastro publico.
 
-```powershell
-$env:CHAT_INTERNO_USERS = "C:/caminho/usuarios.json"
-$env:FIREBASE_API_KEY = "cole-a-apiKey-aqui"
-node scripts/import-auth-users.js
-```
+## Estado de seguranca
+
+O Realtime Database de producao esta bloqueado globalmente: `.read` e `.write`
+estao definidos como `false`. A leitura anonima de verificacao retornou HTTP
+401. Nenhum dado foi apagado. Mantenha o bloqueio ate a configuracao de contas
+individuais autorizadas, migracao e validacao do painel autenticado.
+
+`firebase.rules.json` contem a proxima etapa, que permite usuarios autenticados
+com provedor Email/Password; nao e a regra atualmente publicada. `auth != null`
+sozinho nao e uma lista de autorizacao: desative cadastro publico depois de
+criar as contas e antes de publicar essa regra. A migracao da base historica
+deve ser concluida e validada antes de liberar leitura e gravacao.
 
 ## Importante
 
-O arquivo `kanban_data.js` contem dados migrados e tambem precisa ser revisado se o repositorio continuar publico. Mesmo com Firebase fechado, qualquer dado sensivel que esteja no JavaScript publicado continua visivel para quem acessar o site.
+O arquivo `kanban_data.js` era uma fonte historica com dados pessoais. Foi
+removido da versao atual e preservado fora do checkout em
+`C:\planilha de controle de atas\kanban_data-private-backup.js`; nao o publique
+novamente. O repositorio e o GitHub Pages sao publicos. Considere a exposicao
+passada como real: remover o arquivo da versao atual nao apaga versoes antigas,
+forks ou caches.

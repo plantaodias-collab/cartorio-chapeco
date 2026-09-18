@@ -32,6 +32,8 @@
   .setup-error { color: #b91c1c; font-size: 12px; margin-top: 8px; display: none; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 6px; padding: 8px 12px; }
   .reset-link { display: block; text-align: center; margin-top: 12px; font-size: 12px; color: #94a3b8; cursor: pointer; }
   .reset-link:hover { color: #64748b; }
+  button.reset-link { width: 100%; padding: 0; border: 0; background: none; font: inherit; line-height: 1.5; }
+  .login-notice { display:none; color:#166534; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; padding:8px 10px; font-size:12px; margin-bottom:10px; }
 
   /* ── Loading ── */
   #loading { position: fixed; inset: 0; background: #f0f2f7; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 500; gap: 14px; }
@@ -487,6 +489,12 @@
   .work-chip { display:inline-flex; align-items:center; gap:4px; padding:3px 6px; border-radius:6px; font-size:10.5px; font-weight:700; color:#475569; background:#f8fafc; border:1px solid #e2e8f0; }
   .work-chip.warn { color:#9a3412; background:#fff7ed; border-color:#fed7aa; }
   .work-chip.danger { color:#b91c1c; background:#fff1f2; border-color:#fecdd3; }
+  .card.card-near-deadline { border-color:#f59e0b !important; box-shadow:0 0 0 2px rgba(245,158,11,0.2), 0 4px 14px rgba(245,158,11,0.1) !important; }
+  .card.card-selected { border-color:#2563eb !important; box-shadow:0 0 0 2px rgba(37,99,235,0.22), 0 4px 14px rgba(37,99,235,0.12) !important; }
+  .card-select { width:20px; height:20px; flex:0 0 20px; margin:0 1px 0 -3px; accent-color:#2563eb; cursor:pointer; }
+  .bulk-toolbar { display:flex; align-items:center; flex-wrap:wrap; gap:10px; min-height:44px; padding:7px 22px; border-bottom:1px solid #dbe5f2; background:#eff6ff; color:#1e3a5f; font-size:13px; }
+  .bulk-toolbar[hidden] { display:none; }
+  .bulk-toolbar strong { color:#1d4ed8; }
   .card.card-sector-rcpn { border-left-color:#7c9fe8; }
   .card.card-sector-rcpj { border-left-color:#69a987; }
   .card.card-sector-rtd { border-left-color:#9b82c9; }
@@ -555,8 +563,8 @@
     </div>
     <button class="setup-btn" onclick="setupFirebase()">✓ Conectar e abrir o painel</button>
     <div class="step">
-      <div class="step-num">Opcional — Configurar login</div>
-      <p>Se desejar usar login, ative <strong>Authentication → Email/Password</strong> no Firebase e cole aqui a configuracao do app Web. Sem essa configuracao, o painel abre no modo operacional anterior.</p>
+      <div class="step-num">Passo 4 — Configurar login obrigatório</div>
+      <p>Ative <strong>Authentication → Email/Password</strong>, crie/importa as contas autorizadas e desative cadastro/exclusão pelo próprio usuário em <strong>Authentication → Settings → User actions</strong>. Depois cole a configuração do app Web. Sem login, o painel não acessa os documentos.</p>
       <label class="input-label">Config Firebase Auth em JSON</label>
       <textarea class="setup-input" id="firebaseAuthConfig" placeholder='{"apiKey":"...","authDomain":"cartorio-chapeco.firebaseapp.com","projectId":"cartorio-chapeco"}'></textarea>
     </div>
@@ -571,7 +579,9 @@
     <input class="login-input" id="loginEmail" type="email" placeholder="email@cartorio.com" autocomplete="username">
     <input class="login-input" id="loginPassword" type="password" placeholder="Senha" autocomplete="current-password" onkeydown="if(event.key==='Enter') signIn()">
     <div class="login-error" id="loginError"></div>
+    <div class="login-notice" id="loginNotice" role="status" aria-live="polite"></div>
     <button class="setup-btn" onclick="signIn()">Entrar</button>
+    <button type="button" class="reset-link" onclick="sendPasswordReset()">Primeiro acesso ou esqueceu a senha? Enviar link por e-mail</button>
     <span class="reset-link" onclick="showSetup()">Configurar banco/autenticacao</span>
   </div>
 </div>
@@ -672,13 +682,14 @@
 </header>
 
 <div class="security-note" id="securityNote">
-  Atencao: este painel esta conectado a um banco sem login no navegador. Restrinja as regras do Firebase assim que os usuarios forem cadastrados.
+  A autenticação do painel não protege o banco por si só. Confirme que as regras do Firebase estão restritas antes de usar dados reais.
 </div>
 <div class="sync-bar loading" id="syncBar">
   <div class="sync-dot spinning" id="syncDot"></div>
   <span id="syncMsg">Conectando...</span>
 </div>
 <div class="stats-bar" id="statsBar"></div>
+<div class="bulk-toolbar" id="bulkToolbar" aria-live="polite" hidden></div>
 <div class="board"    id="board"></div>
 
 <!-- Modal -->
@@ -695,8 +706,10 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="kanban_data.js"></script>
 <script>
+// Dados operacionais são carregados exclusivamente do Firebase autenticado.
+// A fonte histórica fica fora do repositório e deve ser migrada antes da publicação.
+const INITIAL_DATA = [];
 // ═══════════════════════════════════════════════════════
 // CONSTANTES
 // ═══════════════════════════════════════════════════════
@@ -730,6 +743,7 @@ let auditEntries = [], editOriginal = null;
 let activeDbUrl = '', auth = null, currentUser = null, firebaseApp = null;
 let focusMode = localStorage.getItem('cartorio_focus_mode') === '1';
 let collapsedCols = new Set(JSON.parse(localStorage.getItem('cartorio_collapsed_cols') || '[]'));
+let selectedCardIds = new Set();
 let lastSavedCard = null;
 let viewMode = localStorage.getItem('cartorio_view_mode') || 'all';
 
@@ -909,20 +923,60 @@ function cloneCard(c) {
 function diffCards(before, after) {
   if (!before || !after) return [];
   const labels = {
+    descricao: 'Descrição / partes', tipo: 'Tipo de ato', aba: 'Aba / serviço',
     situacao: 'Situação', priority: 'Prioridade', recebido: 'Recebido por',
     apresentado_por: 'Apresentado por', telefone: 'Telefone', observacoes: 'Observações',
     pago: 'Pagamento', forma_pagamento: 'Forma de pagamento', valor: 'Valor',
     registro_primitivo: 'Registro primitivo', cnpj: 'CNPJ / CPF',
     resp_entrega: 'Responsável entrega', nome_retirou: 'Quem retirou',
     situacao_retorno: 'Situação do retorno', data_conclusao: 'Data conclusão',
-    data_nd: 'Data ND', data_retorno: 'Data retorno', data_retirada: 'Data retirada'
+    data_nd: 'Data ND', data_retorno: 'Data retorno', data_retirada: 'Data retirada',
+    protocolo: 'Protocolo'
   };
+  const sensitiveFields = new Set([
+    'descricao', 'recebido', 'apresentado_por', 'telefone', 'observacoes',
+    'forma_pagamento', 'valor', 'registro_primitivo', 'cnpj', 'resp_entrega',
+    'nome_retirou', 'situacao_retorno'
+  ]);
   return Object.keys(labels)
-    .filter(key => String(before[key] ?? '') !== String(after[key] ?? ''))
-    .map(key => ({ field: key, label: labels[key], before: before[key] || '', after: after[key] || '' }));
+    .filter(key => Object.prototype.hasOwnProperty.call(after, key)
+      && String(before[key] ?? '') !== String(after[key] ?? ''))
+    .map(key => ({
+      field: key,
+      label: labels[key],
+      before: sensitiveFields.has(key) ? '(conteúdo omitido)' : String(before[key] ?? ''),
+      after: sensitiveFields.has(key) ? '(conteúdo omitido)' : String(after[key] ?? '')
+    }));
 }
 function requiresArchiveDetails(c) {
   return c.situacao === 'Arquivado' && (!c.data_retirada || !c.nome_retirou || !c.resp_entrega);
+}
+function validateRetirementData(card, before) {
+  const retirementChanged = !before || String(before.data_retirada || '') !== String(card.data_retirada || '');
+  const completionChanged = !before || String(before.data_conclusao || '') !== String(card.data_conclusao || '');
+  if (!retirementChanged && !completionChanged) return true;
+  if (card.data_retirada && !String(card.nome_retirou || '').trim()) {
+    showToast('Informe quem retirou o documento.');
+    return false;
+  }
+  if (!card.data_retirada || !card.data_conclusao) return true;
+  const retirada = toDateInput(card.data_retirada);
+  const conclusao = toDateInput(card.data_conclusao);
+  if (!retirada || !conclusao) {
+    showToast('Verifique as datas de conclusão e retirada.');
+    return false;
+  }
+  const retiradaMs = new Date(`${retirada}T00:00:00`).getTime();
+  const conclusaoMs = new Date(`${conclusao}T00:00:00`).getTime();
+  if (!Number.isFinite(retiradaMs) || !Number.isFinite(conclusaoMs)) {
+    showToast('Verifique as datas de conclusão e retirada.');
+    return false;
+  }
+  if (retiradaMs < conclusaoMs) {
+    showToast('A data de retirada não pode ser anterior à conclusão.');
+    return false;
+  }
+  return true;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -932,6 +986,18 @@ function showSetup() {
   document.getElementById('firebaseUrl').value = localStorage.getItem(FIREBASE_KEY) || DEFAULT_FIREBASE_URL;
   document.getElementById('firebaseAuthConfig').value = localStorage.getItem(AUTH_CONFIG_KEY) || '';
   document.getElementById('setup-screen').classList.remove('hidden');
+}
+function normalizeDatabaseUrl(value) {
+  try {
+    const parsed = new URL(String(value || '').trim());
+    const hostname = parsed.hostname.toLowerCase();
+    const isFirebaseHost = hostname.endsWith('.firebaseio.com') || hostname.endsWith('.firebasedatabase.app');
+    if (parsed.protocol !== 'https:' || !isFirebaseHost || parsed.port || parsed.username || parsed.password
+      || (parsed.pathname !== '' && parsed.pathname !== '/') || parsed.search || parsed.hash) return '';
+    return parsed.origin;
+  } catch(e) {
+    return '';
+  }
 }
 function initOperatorName() {
   document.getElementById('operatorName').value = localStorage.getItem(OPERATOR_KEY) || '';
@@ -1010,17 +1076,22 @@ function requireOperatorName() {
   return false;
 }
 function setupFirebase() {
-  const url = document.getElementById('firebaseUrl').value.trim();
+  const url = normalizeDatabaseUrl(document.getElementById('firebaseUrl').value);
   const authConfig = document.getElementById('firebaseAuthConfig').value.trim();
   const parsedAuthConfig = parseAuthConfig(authConfig);
   const err = document.getElementById('setupError');
-  if (!url.startsWith('https://') || !url.includes('firebaseio.com')) {
+  if (!url) {
+    err.textContent = 'URL inválida. Use uma URL HTTPS do Firebase Realtime Database.';
     err.style.display = 'block'; return;
+  }
+  if (!parsedAuthConfig) {
+    err.textContent = 'Login obrigatório. Cole a configuração Web do Firebase Auth em JSON válido.';
+    err.style.display = 'block';
+    return;
   }
   err.style.display = 'none';
   localStorage.setItem(FIREBASE_KEY, url);
-  if (parsedAuthConfig) localStorage.setItem(AUTH_CONFIG_KEY, JSON.stringify(parsedAuthConfig));
-  else localStorage.removeItem(AUTH_CONFIG_KEY);
+  localStorage.setItem(AUTH_CONFIG_KEY, JSON.stringify(parsedAuthConfig));
   document.getElementById('setup-screen').classList.add('hidden');
   connectFirebase(url);
 }
@@ -1031,13 +1102,26 @@ function parseAuthConfig(raw) {
     return cfg && cfg.apiKey && cfg.authDomain && cfg.projectId ? cfg : null;
   } catch(e) { return null; }
 }
-function connectFirebase(url) {
+function connectFirebase(rawUrl) {
+  const url = normalizeDatabaseUrl(rawUrl);
+  if (!url) {
+    document.getElementById('loading').classList.add('hidden');
+    setSyncStatus('error', 'URL do Firebase inválida. Confira a configuração do banco.');
+    showSetup();
+    return;
+  }
   activeDbUrl = url;
   document.getElementById('loading').classList.remove('hidden');
   setSyncStatus('loading', 'Conectando ao banco compartilhado...');
   try {
     const authConfig = parseAuthConfig(localStorage.getItem(AUTH_CONFIG_KEY) || '');
-    const config = { ...(authConfig || {}), databaseURL: url };
+    if (!authConfig) {
+      document.getElementById('loading').classList.add('hidden');
+      setSyncStatus('error', 'Autenticação obrigatória. Configure o Firebase Auth para continuar.');
+      showSetup();
+      return;
+    }
+    const config = { ...authConfig, databaseURL: url };
     try { firebaseApp = firebase.app(); } catch(e) { firebaseApp = firebase.initializeApp(config); }
     db = firebase.database(firebaseApp);
     if (authConfig) {
@@ -1054,8 +1138,6 @@ function connectFirebase(url) {
           setSyncStatus('loading', 'Aguardando login...');
         }
       });
-    } else {
-      listenFirebase();
     }
   } catch(e) {
     document.getElementById('loading').classList.add('hidden');
@@ -1066,6 +1148,7 @@ function connectFirebase(url) {
 async function signIn() {
   if (!auth) return;
   const err = document.getElementById('loginError');
+  document.getElementById('loginNotice').style.display = 'none';
   err.style.display = 'none';
   try {
     await auth.signInWithEmailAndPassword(
@@ -1076,6 +1159,33 @@ async function signIn() {
     err.textContent = 'Nao foi possivel entrar. Verifique e-mail e senha.';
     err.style.display = 'block';
   }
+}
+async function sendPasswordReset() {
+  const emailInput = document.getElementById('loginEmail');
+  const email = emailInput.value.trim();
+  const err = document.getElementById('loginError');
+  const notice = document.getElementById('loginNotice');
+  err.style.display = 'none';
+  notice.style.display = 'none';
+  if (!auth) {
+    err.textContent = 'A autenticação ainda não foi configurada neste navegador.';
+    err.style.display = 'block';
+    return;
+  }
+  if (!email || !emailInput.validity.valid) {
+    err.textContent = 'Informe um endereço de e-mail válido.';
+    err.style.display = 'block';
+    emailInput.focus();
+    return;
+  }
+  const genericMessage = 'Se este e-mail pertencer a uma conta autorizada, enviaremos um link para definir ou redefinir a senha.';
+  try {
+    await auth.sendPasswordResetEmail(email);
+  } catch(e) {
+    // Same response whether or not an account exists, avoiding account discovery.
+  }
+  notice.textContent = genericMessage;
+  notice.style.display = 'block';
 }
 function signOut() {
   if (auth) auth.signOut();
@@ -1095,14 +1205,20 @@ function listenFirebase() {
   });
 }
 function buildCards(data) {
-  const overrides = data.overrides ? Object.values(data.overrides) : [];
-  const newCards  = data.newCards  ? Object.values(data.newCards)  : [];
+  const overrides = data.overrides ? Object.values(data.overrides).filter(Boolean) : [];
+  const newCards  = data.newCards  ? Object.values(data.newCards).filter(Boolean) : [];
   auditEntries = data.audit ? Object.values(data.audit).filter(Boolean) : [];
-  cards = INITIAL_DATA.map(c => {
-    const ov = overrides.find(o => o && o.id === c.id);
-    return ov ? { ...c, ...ov } : { ...c };
+  const mergedById = new Map();
+  INITIAL_DATA.forEach(c => mergedById.set(c.id, { ...c }));
+  newCards.forEach(nc => {
+    if (!nc.id) return;
+    mergedById.set(nc.id, { ...(mergedById.get(nc.id) || {}), ...nc });
   });
-  newCards.forEach(nc => { if (nc && !cards.find(c => c.id === nc.id)) cards.push(nc); });
+  overrides.forEach(ov => {
+    if (!ov.id || !mergedById.has(ov.id)) return;
+    mergedById.set(ov.id, { ...mergedById.get(ov.id), ...ov });
+  });
+  cards = [...mergedById.values()];
   document.getElementById('totalSpan').textContent = cards.length.toLocaleString('pt-BR');
   if (document.getElementById('fAba').options.length <= 1) populateFilters();
   applyFilters();
@@ -1110,6 +1226,7 @@ function buildCards(data) {
 async function saveItem(type, payload, before = null) {
   if (!db) { showToast('❌ Sem conexão.'); return false; }
   if (!requireOperatorName()) return false;
+  if (!validateRetirementData(payload, before)) return false;
   setSyncStatus('loading', '💾 Salvando...');
   try {
     const key = String(payload.id).replace(/[.#$[\]/]/g, '_');
@@ -1143,8 +1260,13 @@ async function saveItem(type, payload, before = null) {
   document.getElementById('firebaseUrl').value = savedUrl;
   document.getElementById('firebaseAuthConfig').value = localStorage.getItem(AUTH_CONFIG_KEY) || '';
   const savedAuthConfig = parseAuthConfig(localStorage.getItem(AUTH_CONFIG_KEY) || '');
-  document.getElementById('setup-screen').classList.add('hidden');
-  connectFirebase(savedUrl);
+  if (savedAuthConfig) {
+    document.getElementById('setup-screen').classList.add('hidden');
+    connectFirebase(savedUrl);
+  } else {
+    document.getElementById('loading').classList.add('hidden');
+    showSetup();
+  }
 })();
 
 // ═══════════════════════════════════════════════════════
@@ -1282,6 +1404,11 @@ function findLikelyDuplicate(candidate) {
 // RENDER BOARD
 // ═══════════════════════════════════════════════════════
 function renderBoard() {
+  for (const id of selectedCardIds) {
+    const card = cards.find(item => item.id === id);
+    if (!vis.has(id) || !card || card.situacao === 'Arquivado') selectedCardIds.delete(id);
+  }
+  renderBulkToolbar();
   const board = document.getElementById('board');
   board.innerHTML = '';
   COLS.forEach(col => {
@@ -1306,6 +1433,60 @@ function renderBoard() {
       ${col.id === 'Arquivado' ? '' : `<button class="add-btn" onclick="openAdd('${col.id}')">+ Adicionar documento</button>`}`;
     board.appendChild(d);
   });
+}
+function renderBulkToolbar() {
+  const toolbar = document.getElementById('bulkToolbar');
+  if (!toolbar) return;
+  const count = selectedCardIds.size;
+  toolbar.hidden = count === 0;
+  toolbar.innerHTML = count ? `
+    <strong>${count}</strong> documento(s) selecionado(s)
+    <button class="btn btn-primary btn-sm" type="button" onclick="bulkAssignDialog()">Atribuir responsável</button>
+    <button class="btn btn-ghost btn-sm" type="button" onclick="clearSelection()">Limpar seleção</button>` : '';
+}
+function toggleSelect(id, checked) {
+  if (!requireOperatorName()) { renderBoard(); return; }
+  if (checked) selectedCardIds.add(id);
+  else selectedCardIds.delete(id);
+  renderBoard();
+}
+function clearSelection() {
+  selectedCardIds.clear();
+  renderBoard();
+}
+async function bulkAssignDialog() {
+  if (!requireOperatorName()) return;
+  const eligible = [...selectedCardIds].filter(id => cards.some(c => c.id === id && c.situacao !== 'Arquivado'));
+  if (!eligible.length) {
+    showToast('Selecione ao menos um documento que não esteja arquivado.');
+    return;
+  }
+  const name = prompt(`Atribuir ${eligible.length} documento(s) para qual responsável?`);
+  if (!name || !name.trim()) return;
+  const responsible = name.trim().replace(/\s+/g, ' ');
+  if (!confirm(`Atribuir ${eligible.length} documento(s) para “${responsible}”?`)) return;
+  await bulkAssign(responsible, eligible);
+}
+async function bulkAssign(name, ids = [...selectedCardIds]) {
+  if (!requireOperatorName()) return;
+  let savedCount = 0;
+  let failedCount = 0;
+  for (const id of ids) {
+    const current = cards.find(c => c.id === id);
+    if (!current || current.situacao === 'Arquivado') continue;
+    const before = cloneCard(current);
+    const updated = { ...current, recebido: name };
+    const isNew = String(current.id).startsWith('usr_');
+    const ok = await saveItem(isNew ? 'newCards' : 'overrides', buildPayload(updated, isNew), before);
+    if (ok) {
+      current.recebido = name;
+      savedCount++;
+    } else failedCount++;
+  }
+  clearSelection();
+  showToast(failedCount
+    ? `Atribuídos: ${savedCount}; falharam: ${failedCount}. Confira a conexão e tente novamente.`
+    : `✓ ${savedCount} documento(s) atribuído(s) a ${name}.`);
 }
 function eid(s) { return s.replace(/[^a-zA-Z0-9]/g,'_'); }
 function pulseCard(id) {
@@ -1349,6 +1530,11 @@ function renderCard(c, compact = false) {
   const payLabel = pago || 'N/I';
   const ata = isAta(c);
   const statusClass = c.situacao === 'Nota Devolutiva' ? 'status-nd' : c.situacao === 'Aguard. Retorno ND' ? 'status-return' : c.situacao === 'Concluído' ? 'status-done' : c.situacao === 'Arquivado' ? 'status-archived' : 'status-active';
+  const daysUntilDeadline = Number(c.prazo);
+  const nearDeadline = !['Concluído','Arquivado'].includes(c.situacao)
+    && c.prazo !== '' && c.prazo != null
+    && Number.isFinite(daysUntilDeadline) && daysUntilDeadline >= 0 && daysUntilDeadline <= 5;
+  const selected = selectedCardIds.has(c.id);
   const identifier = c.protocolo ? `<span class="card-identifier">Protocolo <strong>${esc(c.protocolo)}</strong></span>` : '';
   const paused = daysSinceLastAction(c);
   const workline = !compact ? `<div class="card-workline">
@@ -1370,10 +1556,11 @@ function renderCard(c, compact = false) {
     pzEl = `<span class="${cls}">${c.prazo}d</span>`;
   }
   return `
-    <div class="card prio-${c.priority}${ata ? ' card-ata' : ''}${compact ? ' archived-compact' : ''} ${sectorClass(c)}" id="card-${c.id}"
+    <div class="card prio-${c.priority}${ata ? ' card-ata' : ''}${compact ? ' archived-compact' : ''}${nearDeadline ? ' card-near-deadline' : ''}${selected ? ' card-selected' : ''} ${sectorClass(c)}" id="card-${c.id}"
          draggable="${hasOperatorName() ? 'true' : 'false'}" ondragstart="dStart(event,'${c.id}')" ondragend="dEnd()"
          onclick="openEdit('${c.id}')" tabindex="0" role="button" aria-label="Abrir ${escAttr(desc)}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openEdit('${c.id}')}" >
       <div class="card-top">
+        ${!compact ? `<input type="checkbox" class="card-select" aria-label="Selecionar ${escAttr(desc)}" title="Selecionar para atribuição em lote" ${selected ? 'checked' : ''} onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" onchange="toggleSelect('${escAttr(c.id)}',this.checked)">` : ''}
         <div class="card-aba">${esc(c.aba)}</div>
         <div class="card-badges">
           <div class="paychip ${payClass}" title="Pagamento">${esc(payLabel)}</div>
@@ -1628,8 +1815,45 @@ function openEdit(id) {
     </div>`,
     `<button class="btn btn-ghost" onclick="printDocument(cards.find(x=>x.id==='${escAttr(id)}'))">🖨️ Imprimir</button>
      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+     <button class="btn btn-ghost" onclick="duplicateCard('${escAttr(id)}')" title="Criar documento novo com dados reaproveitáveis">📋 Duplicar</button>
      <button class="btn btn-primary" onclick="saveEdit()">💾 Salvar para todos</button>`
   );
+}
+
+function duplicateCard(id) {
+  if (!requireOperatorName()) return;
+  const original = cards.find(card => card.id === id);
+  if (!original) return showToast('⚠ Documento não encontrado.');
+  openAdd('Em andamento');
+
+  const values = {
+    n_desc: original.descricao || '',
+    n_aba: original.aba || ABAS[0] || '',
+    n_tipo: original.tipo || '',
+    n_registro_primitivo: original.registro_primitivo || '',
+    n_recv: original.recebido || '',
+    n_apres: original.apresentado_por || '',
+    n_tel: original.telefone || ''
+  };
+  Object.entries(values).forEach(([fieldId, value]) => {
+    const field = document.getElementById(fieldId);
+    if (field) field.value = value;
+  });
+
+  const noDocumentNumber = original.cnpj === '(Sem CNPJ)';
+  const noDocumentCheckbox = document.getElementById('n_sem_cnpj');
+  const documentField = document.getElementById('n_cnpj');
+  if (noDocumentCheckbox && documentField) {
+    noDocumentCheckbox.checked = noDocumentNumber;
+    documentField.value = noDocumentNumber ? '' : (original.cnpj || '');
+    documentField.disabled = noDocumentNumber;
+  }
+  // Payment, observations and dates deliberately start blank for the new record.
+  document.getElementById('n_pago').value = '';
+  document.getElementById('n_forma_pagamento').value = '';
+  document.getElementById('n_valor').value = '';
+  document.getElementById('n_obs').value = '';
+  showToast('📋 Dados reaproveitados. Revise o novo documento e informe os dados de pagamento.');
 }
 
 async function saveEdit() {

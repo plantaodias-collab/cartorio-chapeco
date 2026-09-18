@@ -1,8 +1,11 @@
 const fs = require('fs');
 const vm = require('vm');
 const https = require('https');
+const path = require('path');
 
 const dbUrl = (process.env.FIREBASE_DB_URL || 'https://cartorio-chapeco-default-rtdb.firebaseio.com').replace(/\/$/, '');
+const idToken = process.env.FIREBASE_ID_TOKEN;
+const operator = process.env.MIGRATION_OPERATOR;
 const cutoff = process.env.CUTOFF_DATE || '2026-01-15';
 const apply = process.argv.includes('--apply');
 const list = process.argv.includes('--list');
@@ -11,6 +14,7 @@ function request(method, path, body) {
   return new Promise((resolve, reject) => {
     const payload = body == null ? null : JSON.stringify(body);
     const url = new URL(`${dbUrl}${path}`);
+    if (idToken) url.searchParams.set('auth', idToken);
     const req = https.request(url, {
       method,
       headers: payload ? {
@@ -32,7 +36,8 @@ function request(method, path, body) {
 }
 
 function loadInitialData() {
-  const code = fs.readFileSync('kanban_data.js', 'utf8');
+  const sourcePath = process.env.MIGRATION_SOURCE || path.join(__dirname, '..', '..', 'kanban_data-private-backup.js');
+  const code = fs.readFileSync(sourcePath, 'utf8');
   const context = {};
   vm.createContext(context);
   vm.runInContext(`${code}; this.INITIAL_DATA = INITIAL_DATA;`, context);
@@ -68,11 +73,12 @@ function buildOverridePayload(card) {
     data_retorno: card.data_retorno || '',
     data_retirada: card.data_retirada || '',
     updatedAt: new Date().toISOString(),
-    updatedBy: 'script:archive-concluded-before'
+    updatedBy: operator
   };
 }
 
 (async () => {
+  if (!idToken || !operator) throw new Error('Defina FIREBASE_ID_TOKEN e MIGRATION_OPERATOR antes de executar o script.');
   const db = await request('GET', '/kanban.json');
   const overrides = db && db.overrides ? Object.values(db.overrides).filter(Boolean) : [];
   const newCards = db && db.newCards ? Object.values(db.newCards).filter(Boolean) : [];
@@ -99,7 +105,7 @@ function buildOverridePayload(card) {
         ...card,
         situacao: 'Arquivado',
         updatedAt: new Date().toISOString(),
-        updatedBy: 'script:archive-concluded-before'
+        updatedBy: operator
       };
     } else {
       patch.overrides[key] = buildOverridePayload(card);
