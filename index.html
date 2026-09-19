@@ -504,6 +504,106 @@
   .setup-card { overflow-wrap:anywhere; }
   .setup-card code { word-break:break-word; }
   button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible, .card:focus-visible { outline:3px solid #93c5fd; outline-offset:2px; }
+  /* ── Interface operacional: compacta, legível e orientada à triagem ── */
+  :root {
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --background: #eef3f9;
+    --surface: #ffffff;
+    --surface-secondary: #f7f9fc;
+    --border: #dbe4ef;
+    --text-primary: #132238;
+    --text-secondary: #5d6d82;
+    --success: #168653;
+    --warning: #c76a00;
+    --danger: #c43c46;
+    --info: #2e69c7;
+  }
+  body { background: var(--background); color: var(--text-primary); font-size: 13px; }
+  header { display: grid; gap: 8px; padding: 10px 22px 11px; background: linear-gradient(135deg, #102540 0%, #0d1d34 100%); }
+  .header-top { gap: 12px; min-height: 38px; }
+  .brand h1 { font-size: 18px; letter-spacing: -0.2px; }
+  .brand p { margin-top: 2px; font-size: 11px; color: #b7c8de; }
+  .operator-wrap { gap: 6px; }
+  .operator-wrap.identified #operatorName { display: none; }
+  .operator-badge { height: 28px; padding: 0 9px; border-color: rgba(134,239,172,0.3); background: rgba(22,134,83,0.17); color: #dcfce7; font-size: 11px; }
+  .operator-change { height: 28px; padding: 0 8px; border-radius: 7px; }
+  .header-top #searchInput { height: 36px; border: 0; border-radius: 8px; padding-inline: 13px; box-shadow: none; font-size: 13px; }
+  .header-top #searchInput:focus { box-shadow: 0 0 0 3px rgba(147,197,253,0.34); }
+  .header-cta { gap: 6px; }
+  .header-cta .btn, .header-cta .btn-sm { min-height: 32px; }
+  .header-filters { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; }
+  .view-tabs { gap: 2px; padding: 3px; border-radius: 8px; background: rgba(255,255,255,0.07); }
+  .view-tab { height: 27px; padding: 0 9px; border-radius: 6px; font-size: 11px; color: #c9d6e6; }
+  .view-tab.active { color: #102540; box-shadow: none; }
+  .filter-rail { display: flex; min-width: 0; gap: 6px; overflow-x: auto; padding: 1px 0; scrollbar-width: thin; }
+  .filter-rail::-webkit-scrollbar { height: 4px; }
+  .filter-group { flex: 0 0 auto; gap: 5px; padding: 3px 5px; border: 1px solid rgba(185,204,228,0.2); border-radius: 7px; background: rgba(255,255,255,0.055); transition: border-color 0.16s ease, background 0.16s ease; }
+  .filter-group.is-active { border-color: rgba(147,197,253,0.75); background: rgba(37,99,235,0.2); }
+  .filter-label { padding: 0 2px; color: #aebfd5; font-size: 9px; letter-spacing: 0.65px; }
+  .filter-group select { height: 28px; min-width: 108px; max-width: 158px; padding: 0 25px 0 8px; border: 1px solid #cbd6e5; border-radius: 6px; font-size: 11px; color: #26364d; background-color: #fff; }
+  .filter-group select.is-active { border-color: #78a8f4; background-color: #eef5ff; color: #174e9e; font-weight: 700; }
+  .filter-actions { display: flex; align-items: center; gap: 5px; }
+  .filter-actions .btn, .more-actions > summary { min-height: 28px; padding-inline: 9px; font-size: 11px; }
+  .more-actions { position: relative; }
+  .more-actions > summary { list-style: none; display: inline-flex; align-items: center; cursor: pointer; }
+  .more-actions > summary::-webkit-details-marker { display: none; }
+  .more-actions > summary::after { content: '⌄'; margin-left: 5px; font-size: 12px; }
+  .more-actions[open] > summary { background: #fff; color: #152845; }
+  .more-actions-menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 160; display: grid; gap: 3px; min-width: 138px; padding: 5px; border: 1px solid var(--border); border-radius: 8px; background: #fff; box-shadow: 0 12px 28px rgba(15,23,42,0.2); }
+  .more-actions-menu .btn { justify-content: flex-start; color: #334155; background: transparent; }
+  .more-actions-menu .btn:hover { background: #eff6ff; color: #174e9e; transform: none; }
+  .active-filter-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; min-height: 36px; padding: 6px 22px; border-bottom: 1px solid var(--border); background: #f8fbff; }
+  .active-filter-label { color: var(--text-secondary); font-size: 10px; font-weight: 800; letter-spacing: 0.45px; text-transform: uppercase; }
+  .active-filter-chip { display: inline-flex; align-items: center; gap: 5px; max-width: 270px; min-height: 24px; padding: 2px 7px; border: 1px solid #bfdbfe; border-radius: 6px; color: #24538e; background: #eff6ff; font-size: 11px; cursor: pointer; }
+  .active-filter-chip strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 750; }
+  .active-filter-chip span { color: #557cae; font-size: 15px; line-height: 1; }
+  .active-filter-chip:hover { border-color: #7baaf0; background: #e1efff; }
+  .clear-all-filters { margin-left: 2px; border: 0; background: transparent; color: #41658f; font-size: 11px; font-weight: 750; cursor: pointer; }
+  .clear-all-filters:hover { color: #174e9e; text-decoration: underline; }
+  .stats-bar { gap: 6px; padding: 7px 22px; box-shadow: none; }
+  .stat-pill { min-height: 27px; padding: 3px 9px; border-radius: 7px; font-size: 10.5px; color: #55667d; }
+  .stat-pill .sc { font-size: 13px; font-weight: 850; }
+  .metric-info { color: #24538e; border-color: #c9ddfb; background: #f3f8ff; }
+  .metric-info .sd { background: var(--info); }.metric-info .sc { color: #1e539d; }
+  .metric-danger { color: #953740; border-color: #f2cdd1; background: #fff7f7; }
+  .metric-danger .sd { background: var(--danger); }.metric-danger .sc { color: #9e303a; }
+  .metric-warning { color: #8a5518; border-color: #f0d9b4; background: #fffaf3; }
+  .metric-warning .sd { background: var(--warning); }.metric-warning .sc { color: #945607; }
+  .metric-success { color: #216846; border-color: #c7e7d6; background: #f5fcf8; }
+  .metric-success .sd { background: var(--success); }.metric-success .sc { color: #17633e; }
+  .metric-neutral { color: #5d6d82; border-color: #dbe3ed; background: #fafbfd; }
+  .metric-neutral .sd { background: #8c9bb0; }
+  .metric-special { color: #68518c; border-color: #ded3ef; background: #fbf9fe; }
+  .metric-special .sd { background: #8061aa; }.metric-special .sc { color: #63468a; }
+  .metric-filtered { margin-left: auto; color: #345a91; border-color: #c9ddfb; background: #f3f8ff; }
+  .metric-filtered .sd { background: #4d7ec6; }.metric-filtered .sc { color: #24538e; }
+  .board { gap: 14px; padding: 14px 22px 32px; min-height: calc(100vh - 178px); }
+  .column { width: 320px; min-width: 320px; max-height: calc(100vh - 192px); border-radius: 10px; background: rgba(255,255,255,0.7); box-shadow: 0 5px 16px rgba(15,23,42,0.055); }
+  .col-head { min-height: 47px; padding: 9px 12px; border-radius: 10px 10px 0 0; background: #fbfcfe; }
+  .col-name { font-size: 13px; letter-spacing: -0.1px; }
+  .col-cnt { min-width: 28px; padding: 3px 7px; font-size: 11px; }
+  .col-body { padding: 9px; gap: 8px; }
+  .col-empty { padding: 34px 12px; color: #8493a7; font-size: 12px; }
+  .card:not(.archived-compact) { min-height: 0; padding: 10px 10px 9px 14px; border-radius: 8px; }
+  .card::before { width: 3px; border-radius: 8px 0 0 8px; }
+  .card:hover { transform: translateY(-1px); }
+  .card:not(.archived-compact):hover { transform: translateY(-1px) scale(1.002); }
+  .card-top { margin-bottom: 5px; }
+  .card-aba { font-size: 9.5px; letter-spacing: 0.38px; }
+  .card-status { margin-bottom: 5px; padding: 2px 6px; font-size: 9px; }
+  .card-desc, .card:not(.archived-compact) .card-desc { margin-bottom: 7px; font-size: 12.5px; line-height: 1.35; -webkit-line-clamp: 2; min-height: 0; }
+  .card-identifier { margin: 0 0 5px; font-size: 10.5px; }
+  .card-workline { gap: 3px; margin: 0 0 6px; }
+  .work-chip { padding: 2px 5px; border-radius: 5px; font-size: 9.5px; }
+  .card-extra { margin: 0 0 6px; font-size: 10px; }
+  .card-meta { gap: 4px; padding-top: 6px; }
+  .cm, .pchip, .paychip, .pz { font-size: 9.5px; }
+  .card-audit { margin-top: 5px; padding-top: 5px; font-size: 9.5px; }
+  .card-select { width: 18px; height: 18px; flex-basis: 18px; }
+  body.focus-mode .board { min-height: calc(100vh - 62px); padding-top: 10px; }
+  body.focus-mode .column { max-height: calc(100vh - 78px); }
+  @media (max-width: 1500px) { .header-filters { grid-template-columns: 1fr auto; } .view-tabs { grid-column: 1 / -1; width: max-content; } .filter-rail { min-width: 0; } }
   @media (max-width: 1100px) {
     header { padding-left:14px; padding-right:14px; }
     .header-top { display:grid; grid-template-columns:minmax(180px, 1fr) auto; gap:8px; }
@@ -635,6 +735,7 @@
       <button type="button" class="view-tab" data-view="today" onclick="setViewMode('today')">Hoje</button>
       <button type="button" class="view-tab" data-view="archived" onclick="setViewMode('archived')">Arquivados</button>
     </div>
+    <div class="filter-rail" aria-label="Filtros do painel">
     <div class="filter-group">
       <span class="filter-label">Triagem</span>
     <select id="fPrio" onchange="applyFilters()">
@@ -672,15 +773,23 @@
     </select>
     <select id="colJump" onchange="jumpColumn(this.value)"><option value="">Ir para coluna</option></select>
     </div>
+    </div>
     <div class="filter-actions primary-actions">
       <button class="btn btn-ghost"   onclick="resetFilters()" aria-label="Limpar filtros">Limpar</button>
-      <button class="btn btn-ghost"   onclick="showReport()">Relatório</button>
-      <button class="btn btn-ghost"   onclick="exportBackup()">Backup</button>
-      <button class="btn btn-ghost"   onclick="exportCsv()">CSV</button>
+      <details class="more-actions">
+        <summary class="btn btn-ghost" aria-label="Abrir ações adicionais">Ações</summary>
+        <div class="more-actions-menu">
+          <button class="btn btn-ghost" onclick="showReport()">Relatório</button>
+          <button class="btn btn-ghost" onclick="exportBackup()">Backup</button>
+          <button class="btn btn-ghost" onclick="exportCsv()">CSV</button>
+        </div>
+      </details>
       <button class="btn btn-ghost focus-keep" id="focusBtn" onclick="toggleFocusMode()" aria-label="Alternar modo foco">Foco</button>
     </div>
   </div>
 </header>
+
+<div class="active-filter-bar" id="activeFilters" aria-live="polite" hidden></div>
 
 <div class="security-note" id="securityNote">
   A autenticação do painel não protege o banco por si só. Confirme que as regras do Firebase estão restritas antes de usar dados reais.
@@ -1026,6 +1135,7 @@ function updateOperatorBadge() {
   badge.textContent = name ? `Operador: ${name}` : '';
   badge.title = email ? `Conta autenticada: ${email}` : '';
   badge.classList.toggle('show', !!name);
+  badge.closest('.operator-wrap')?.classList.toggle('identified', !!name);
 }
 function currentOperatorName() {
   const chosen = (localStorage.getItem(OPERATOR_KEY) || document.getElementById('operatorName')?.value || '').trim();
@@ -1317,6 +1427,43 @@ function populateFilters() {
   while (jump.options.length > 1) jump.remove(1);
   COLS.forEach(c => jump.appendChild(new Option(c.label, c.id)));
 }
+function renderActiveFilters() {
+  const bar = document.getElementById('activeFilters');
+  if (!bar) return;
+  const labels = {
+    fPrio: 'Prioridade', fAba: 'Serviço', fTipo: 'Tipo',
+    fRecv: 'Responsável', fSit: 'Situação', fPago: 'Pagamento'
+  };
+  const items = [];
+  if (viewMode !== 'all') {
+    const selected = document.querySelector(`.view-tab[data-view="${viewMode}"]`);
+    items.push({ id: 'viewMode', label: 'Visão', value: selected?.textContent?.trim() || viewMode });
+  }
+  const query = document.getElementById('searchInput').value.trim();
+  if (query) items.push({ id: 'searchInput', label: 'Busca', value: query });
+  Object.keys(labels).forEach(id => {
+    const el = document.getElementById(id);
+    if (!el?.value) return;
+    items.push({ id, label: labels[id], value: el.options[el.selectedIndex]?.text || el.value });
+  });
+  document.querySelectorAll('.filter-group').forEach(group => {
+    group.classList.toggle('is-active', [...group.querySelectorAll('select')].some(el => el.value));
+  });
+  document.querySelectorAll('.filter-group select').forEach(el => el.classList.toggle('is-active', !!el.value));
+  bar.hidden = items.length === 0;
+  bar.innerHTML = items.length ? `
+    <span class="active-filter-label">Filtros ativos</span>
+    ${items.map(item => `<button type="button" class="active-filter-chip" onclick="clearActiveFilter(${escAttr(JSON.stringify(item.id))})" title="Remover filtro ${escAttr(item.label)}">${esc(item.label)}: <strong>${esc(String(item.value).slice(0, 42))}</strong><span aria-hidden="true">×</span></button>`).join('')}
+    <button type="button" class="clear-all-filters" onclick="resetFilters()">Limpar tudo</button>` : '';
+}
+function clearActiveFilter(id) {
+  if (id === 'viewMode') setViewMode('all', false);
+  else {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  }
+  applyFilters();
+}
 function applyFilters() {
   const rawQ = document.getElementById('searchInput').value.trim();
   const q    = normalizeText(rawQ);
@@ -1352,6 +1499,7 @@ function applyFilters() {
     return true;
   }).map(c => c.id));
   syncAtaMode();
+  renderActiveFilters();
   renderBoard(); renderStats();
 }
 function resetFilters() {
@@ -1629,30 +1777,34 @@ function renderStats() {
   const atas = visibleCards.filter(isAta).length;
   const atasPendentes = visibleCards.filter(c => isAta(c) && !['Concluído','Arquivado'].includes(c.situacao) && hasPendingIssue(c)).length;
   const today = visibleCards.filter(isTodayWork).length;
+  const columnTone = {
+    'Em andamento': 'info', 'Nota Devolutiva': 'danger',
+    'Aguard. Retorno ND': 'warning', 'Concluído': 'success', 'Arquivado': 'neutral'
+  };
   document.getElementById('statsBar').innerHTML =
-    COLS.map(col => `<div class="stat-pill">
-      <div class="sd" style="background:${col.color}"></div>${col.label}<span class="sc">${cnt[col.id]}</span>
+    COLS.map(col => `<div class="stat-pill metric-${columnTone[col.id]}">
+      <div class="sd"></div>${col.label}<span class="sc">${cnt[col.id]}</span>
     </div>`).join('') +
-    `<button type="button" class="stat-pill" onclick="quickFilter('attention')" title="Filtrar prioridades e prazos críticos" style="cursor:pointer;border-color:#fecaca;background:#fff1f2;color:#991b1b">
-       <div class="sd" style="background:#ef4444"></div>Atenção<span class="sc" style="color:#991b1b">${attention}</span>
+    `<button type="button" class="stat-pill metric-danger" onclick="quickFilter('attention')" title="Filtrar prioridades e prazos críticos">
+       <div class="sd"></div>Atenção<span class="sc">${attention}</span>
      </button>
-     <button type="button" class="stat-pill" onclick="quickFilter('open')" title="Filtrar documentos ainda abertos" style="cursor:pointer;border-color:#bfdbfe;background:#eff6ff;color:#1d4ed8">
-       <div class="sd" style="background:#2563eb"></div>Abertos<span class="sc" style="color:#1d4ed8">${open}</span>
+     <button type="button" class="stat-pill metric-info" onclick="quickFilter('open')" title="Filtrar documentos ainda abertos">
+       <div class="sd"></div>Abertos<span class="sc">${open}</span>
      </button>
-     <button type="button" class="stat-pill" onclick="quickFilter('nd')" title="Filtrar notas devolutivas e retornos" style="cursor:pointer;border-color:#fed7aa;background:#fff7ed;color:#9a3412">
-       <div class="sd" style="background:#f59e0b"></div>ND/Retorno<span class="sc" style="color:#9a3412">${nd}</span>
+     <button type="button" class="stat-pill metric-warning" onclick="quickFilter('nd')" title="Filtrar notas devolutivas e retornos">
+       <div class="sd"></div>ND/Retorno<span class="sc">${nd}</span>
      </button>
-     <button type="button" class="stat-pill" onclick="quickFilter('atas')" title="Filtrar somente atas" style="cursor:pointer;border-color:#bbf7d0;background:#f0fdf4;color:#166534">
-       <div class="sd" style="background:#16a34a"></div>Atas<span class="sc" style="color:#166534">${atas}</span>
+     <button type="button" class="stat-pill metric-success" onclick="quickFilter('atas')" title="Filtrar somente atas">
+       <div class="sd"></div>Atas<span class="sc">${atas}</span>
      </button>
-     <button type="button" class="stat-pill" onclick="quickFilter('atasPending')" title="Filtrar atas com pendencias" style="cursor:pointer;border-color:#fde68a;background:#fffbeb;color:#854d0e">
-       <div class="sd" style="background:#d97706"></div>Atas pendentes<span class="sc" style="color:#854d0e">${atasPendentes}</span>
+     <button type="button" class="stat-pill metric-warning" onclick="quickFilter('atasPending')" title="Filtrar atas com pendencias">
+       <div class="sd"></div>Atas pendentes<span class="sc">${atasPendentes}</span>
      </button>
-     <button type="button" class="stat-pill" onclick="quickFilter('today')" title="Filtrar trabalho do dia" style="cursor:pointer;border-color:#c4b5fd;background:#f5f3ff;color:#5b21b6">
-       <div class="sd" style="background:#7c3aed"></div>Hoje<span class="sc" style="color:#5b21b6">${today}</span>
+     <button type="button" class="stat-pill metric-special" onclick="quickFilter('today')" title="Filtrar trabalho do dia">
+       <div class="sd"></div>Hoje<span class="sc">${today}</span>
      </button>` +
-    `<div class="stat-pill" style="margin-left:auto;background:#eff6ff;border-color:#bfdbfe">
-       <div class="sd" style="background:#6366f1"></div>Filtrado<span class="sc" style="color:#4338ca">${vis.size}</span>
+    `<div class="stat-pill metric-filtered">
+       <div class="sd"></div>Filtrado<span class="sc">${vis.size}</span>
      </div>`;
 }
 function setSyncStatus(type, msg) {
