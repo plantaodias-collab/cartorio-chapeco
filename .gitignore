@@ -2,6 +2,7 @@
 kanban_data.js
 kanban_data-private-backup.js
 *.service-account.json
+node_modules/
 .env
 .env.*
 !.env.example

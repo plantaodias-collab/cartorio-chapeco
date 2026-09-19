@@ -60,6 +60,32 @@ desative ou remova imediatamente contas que deixarem de precisar de acesso.
 Revise e publique `firebase.rules.json` junto com qualquer alteracao no fluxo
 de gravacao do painel.
 
+## Backup automatico (12h e 18h)
+
+O diretorio `functions/` contem a funcao `backupKanban`, preparada para
+executar todos os dias as 12h e 18h no horario de Brasilia. Ela le somente a
+raiz operacional `kanban`, grava uma fotografia JSON compactada em um bucket
+privado do Cloud Storage e remove, exclusivamente dentro do prefixo
+`cartorio-kanban/`, copias com mais de 30 dias.
+
+Antes de publicar a funcao, crie um bucket privado dedicado no Google Cloud
+Storage, sem acesso publico, e defina seu nome em `functions/.env` a partir de
+`functions/.env.example`. O projeto precisa estar no plano Blaze, pois
+Cloud Functions e Cloud Scheduler sao servicos cobrados. Nunca use o bucket do
+site nem publique os arquivos de backup no repositorio.
+
+Use a conta de servico dedicada
+`kanban-backup@cartorio-chapeco.iam.gserviceaccount.com` para a funcao. Ela
+deve receber somente `Firebase Realtime Database Admin` no projeto (a leitura
+administrativa nao passa pelas regras de usuarios) e `Storage Object Admin`
+somente no bucket de backup. Nao gere chave privada para essa conta: a funcao
+usa as credenciais gerenciadas pelo Google Cloud.
+
+Para restaurar, primeiro valide o JSON e a soma SHA-256 registrada nos
+metadados do arquivo. A restauracao deve ser feita em uma copia de teste ou
+apenas apos salvar uma nova fotografia do banco em producao; importar JSON
+sobre a raiz substitui dados existentes.
+
 ## Importante
 
 O arquivo `kanban_data.js` era uma fonte historica com dados pessoais. Foi
