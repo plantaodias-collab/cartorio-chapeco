@@ -1261,11 +1261,15 @@ async function saveItem(type, payload, before = null) {
     payload.updatedBy = String(currentUser?.email || '').trim();
     if (!payload.updatedBy) throw new Error('Sessão encerrada. Entre novamente para salvar.');
     payload.updatedByName = currentOperatorName();
-    await db.ref(`${DB_PATH}/${type}/${key}`).set(payload);
     const changes = diffCards(before, payload);
-    db.ref(`${DB_PATH}/audit/${Date.now()}_${key}`).set({
-      id: payload.id, type, savedAt, updatedBy: payload.updatedBy, updatedByName: payload.updatedByName, changes
-    }).catch(() => {});
+    const auditKey = db.ref(`${DB_PATH}/audit`).push().key;
+    await db.ref(DB_PATH).update({
+      [`${type}/${key}`]: payload,
+      [`audit/${auditKey}`]: {
+        id: payload.id, type, savedAt, updatedBy: payload.updatedBy,
+        updatedByName: payload.updatedByName, changes
+      }
+    });
     setSyncStatus('ok', `✓ Salvo às ${new Date().toLocaleTimeString('pt-BR')} — visível para todos`);
     return true;
   } catch(e) {
@@ -1551,6 +1555,9 @@ function toggleColumn(id) {
   renderBoard();
 }
 function renderCard(c, compact = false) {
+  const cardId = String(c.id || '');
+  const cardIdLiteral = escAttr(JSON.stringify(cardId));
+  const priority = safePriority(c.priority);
   const desc = (c.descricao||'').trim() || '(sem descrição)';
   const audit = lastUpdateText(c);
   const pago = c.pago || '';
@@ -1581,18 +1588,18 @@ function renderCard(c, compact = false) {
   let pzEl = '';
   if (c.prazo != null) {
     const cls = c.prazo <= 30 ? 'pz pz-r' : c.prazo <= 180 ? 'pz pz-y' : 'pz pz-g';
-    pzEl = `<span class="${cls}">${c.prazo}d</span>`;
+    pzEl = `<span class="${cls}">${esc(c.prazo)}d</span>`;
   }
   return `
-    <div class="card prio-${c.priority}${ata ? ' card-ata' : ''}${compact ? ' archived-compact' : ''}${nearDeadline ? ' card-near-deadline' : ''}${selected ? ' card-selected' : ''} ${sectorClass(c)}" id="card-${c.id}"
-         draggable="${hasOperatorName() ? 'true' : 'false'}" ondragstart="dStart(event,'${c.id}')" ondragend="dEnd()"
-         onclick="openEdit('${c.id}')" tabindex="0" role="button" aria-label="Abrir ${escAttr(desc)}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openEdit('${c.id}')}" >
+    <div class="card prio-${priority}${ata ? ' card-ata' : ''}${compact ? ' archived-compact' : ''}${nearDeadline ? ' card-near-deadline' : ''}${selected ? ' card-selected' : ''} ${sectorClass(c)}" id="card-${escAttr(cardId)}"
+         draggable="${hasOperatorName() ? 'true' : 'false'}" ondragstart="dStart(event,${cardIdLiteral})" ondragend="dEnd()"
+         onclick="openEdit(${cardIdLiteral})" tabindex="0" role="button" aria-label="Abrir ${escAttr(desc)}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openEdit(${cardIdLiteral})}" >
       <div class="card-top">
-        ${!compact ? `<input type="checkbox" class="card-select" aria-label="Selecionar ${escAttr(desc)}" title="Selecionar para atribuição em lote" ${selected ? 'checked' : ''} onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" onchange="toggleSelect('${escAttr(c.id)}',this.checked)">` : ''}
+        ${!compact ? `<input type="checkbox" class="card-select" aria-label="Selecionar ${escAttr(desc)}" title="Selecionar para atribuição em lote" ${selected ? 'checked' : ''} onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" onchange="toggleSelect(${cardIdLiteral},this.checked)">` : ''}
         <div class="card-aba">${esc(c.aba)}</div>
         <div class="card-badges">
           <div class="paychip ${payClass}" title="Pagamento">${esc(payLabel)}</div>
-          <div class="pchip ${c.priority}">${c.priority}</div>
+          <div class="pchip ${priority}">${esc(priority)}</div>
         </div>
       </div>
       ${!compact ? `<div class="card-status ${statusClass}">${esc(c.situacao || 'Sem situação')}</div>` : ''}
@@ -1605,7 +1612,7 @@ function renderCard(c, compact = false) {
         ${c.recebido        ? `<span class="cm cm-recv"  title="Recebido por">${esc(c.recebido)}</span>` : ''}
         ${c.apresentado_por ? `<span class="cm cm-apres" title="Apresentado por">${esc(c.apresentado_por)}</span>` : ''}
         ${c.telefone        ? `<span class="cm cm-tel"   title="Telefone">${esc(c.telefone)}</span>` : ''}
-        <span class="cm cm-date">${c.data_entrada||''}</span>
+        <span class="cm cm-date">${esc(c.data_entrada || '')}</span>
         ${pzEl}
       </div>
       ${audit && !compact ? `<div class="card-audit" title="Ultima alteracao">${esc(audit)}</div>` : ''}
@@ -1738,7 +1745,7 @@ function openEdit(id) {
       </div>
       <div class="field">
         <label>Data de Entrada</label>
-        <div class="ro">${c.data_entrada||'—'}</div>
+        <div class="ro">${esc(c.data_entrada || '—')}</div>
       </div>
       <div class="field">
         <label>Número do Registro Primitivo</label>
@@ -2406,6 +2413,9 @@ function exportCsv() {
 }
 function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function safePriority(value) {
+  return ['Alta', 'Média', 'Normal'].includes(value) ? value : 'Normal';
 }
 function escAttr(s) {
   return esc(s).replace(/'/g,'&#39;');

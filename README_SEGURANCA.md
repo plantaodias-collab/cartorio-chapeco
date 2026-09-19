@@ -17,7 +17,8 @@ Este projeto usa Firebase Realtime Database. O banco de producao esta temporaria
 
 - Botao `Backup` no painel para exportar os cartoes vistos pelo navegador.
 - Metadados `updatedAt` e `updatedBy` nas proximas gravacoes.
-- Campo `Seu nome` no painel para preencher o `updatedBy` neste computador.
+- Nome escolhido no login, gravado como `updatedByName`; o e-mail autenticado
+  permanece gravado em `updatedBy` para fins de seguranca.
 - Firebase Authentication obrigatorio no codigo do painel; o acesso aos dados so deve ser liberado depois da configuracao das contas e das regras.
 - Busca tolerante a acentos e formatos de telefone/documentos.
 - Ordenacao dos cartoes por prioridade, prazo e data de entrada.
@@ -31,7 +32,9 @@ Este projeto usa Firebase Realtime Database. O banco de producao esta temporaria
 - Arquivamento exige data de retirada, quem retirou e responsavel pela entrega.
 - Navegacao rapida entre colunas, botoes principais fixos no mobile e layout ajustado para telas pequenas.
 - Tela de relatorio com documentos por responsavel, tempo medio em aberto, concluidos no mes e documentos parados.
-- Escrita tentativa em `kanban/audit` para registrar futuras alteracoes sem bloquear o salvamento principal. E um historico operacional gravado pelo cliente, nao um log de seguranca confiavel.
+- Cada alteracao grava o cartao e a entrada correspondente em `kanban/audit`
+  em uma unica operacao. O historico ainda e operacional (gravado pelo cliente),
+  e nao substitui uma trilha de auditoria de servidor.
 - Os novos registros de auditoria omitem valores de campos pessoais/financeiros, mantendo a indicacao de quais campos mudaram.
 - Regras de autenticacao preparadas em `firebase.rules.json`; nao as publique antes de configurar as contas autorizadas e desativar o cadastro publico.
 
@@ -45,16 +48,17 @@ Para um fluxo administrativo de senha temporaria com troca obrigatoria apos o pr
 
 ## Estado de seguranca
 
-O Realtime Database de producao esta bloqueado globalmente: `.read` e `.write`
-estao definidos como `false`. A leitura anonima de verificacao retornou HTTP
-401. Nenhum dado foi apagado. Mantenha o bloqueio ate a configuracao de contas
-individuais autorizadas, migracao e validacao do painel autenticado.
+O Realtime Database de producao permite leitura e gravacao somente a contas
+autenticadas pelo provedor Email/Password. Uma leitura anonima de verificacao
+retornou HTTP 401. As regras tambem exigem identificador, situacao, prioridade,
+data de atualizacao e conta autenticada coerentes; exclusoes de cartoes nao sao
+permitidas pelas regras de usuarios comuns.
 
-`firebase.rules.json` contem a proxima etapa, que permite usuarios autenticados
-com provedor Email/Password; nao e a regra atualmente publicada. `auth != null`
-sozinho nao e uma lista de autorizacao: desative cadastro publico depois de
-criar as contas e antes de publicar essa regra. A migracao da base historica
-deve ser concluida e validada antes de liberar leitura e gravacao.
+Mantenha o cadastro publico desativado no Firebase Authentication. `auth != null`
+nao e uma lista de autorizacao: somente crie contas para pessoas autorizadas e
+desative ou remova imediatamente contas que deixarem de precisar de acesso.
+Revise e publique `firebase.rules.json` junto com qualquer alteracao no fluxo
+de gravacao do painel.
 
 ## Importante
 

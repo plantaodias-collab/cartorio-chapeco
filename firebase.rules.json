@@ -4,20 +4,20 @@
       ".read": "auth != null && auth.token.firebase.sign_in_provider == 'password'",
       "newCards": {
         "$cardId": {
-          ".write": "auth != null && auth.token.firebase.sign_in_provider == 'password'",
-          ".validate": "newData.hasChildren(['id', 'descricao', 'situacao', 'priority', 'aba', 'updatedAt', 'updatedBy', 'updatedByName']) && newData.child('id').isString() && newData.child('id').val() == $cardId && newData.child('descricao').isString() && newData.child('descricao').val().length <= 1000 && newData.child('situacao').isString() && newData.child('priority').isString() && newData.child('aba').isString() && newData.child('updatedBy').val() == auth.token.email && newData.child('updatedByName').isString() && newData.child('updatedByName').val().length <= 120"
+          ".write": "auth != null && auth.token.firebase.sign_in_provider == 'password' && newData.exists()",
+          ".validate": "newData.hasChildren(['id', 'descricao', 'situacao', 'priority', 'aba', 'updatedAt', 'updatedBy', 'updatedByName']) && newData.child('id').isString() && newData.child('id').val() == $cardId && newData.child('id').val().matches(/^[^<>'\"&]{1,128}$/) && newData.child('descricao').isString() && newData.child('descricao').val().length <= 1000 && newData.child('situacao').isString() && newData.child('situacao').val().matches(/^(Em andamento|Nota Devolutiva|Aguard. Retorno ND|Concluído|Arquivado)$/) && newData.child('priority').isString() && newData.child('priority').val().matches(/^(Alta|Média|Normal)$/) && newData.child('aba').isString() && newData.child('aba').val().length <= 120 && newData.child('updatedAt').isString() && newData.child('updatedAt').val().length <= 40 && newData.child('updatedBy').isString() && newData.child('updatedBy').val() == auth.token.email && newData.child('updatedByName').isString() && newData.child('updatedByName').val().length >= 3 && newData.child('updatedByName').val().length <= 120 && newData.child('updatedByName').val().matches(/^[^<>]+$/)"
         }
       },
       "overrides": {
         "$cardId": {
-          ".write": "auth != null && auth.token.firebase.sign_in_provider == 'password'",
-          ".validate": "newData.hasChildren(['id', 'situacao', 'priority', 'updatedAt', 'updatedBy', 'updatedByName']) && newData.child('id').isString() && newData.child('id').val() == $cardId && newData.child('situacao').isString() && newData.child('priority').isString() && newData.child('updatedBy').val() == auth.token.email && newData.child('updatedByName').isString() && newData.child('updatedByName').val().length <= 120"
+          ".write": "auth != null && auth.token.firebase.sign_in_provider == 'password' && newData.exists()",
+          ".validate": "newData.hasChildren(['id', 'situacao', 'priority', 'updatedAt', 'updatedBy', 'updatedByName']) && newData.child('id').isString() && newData.child('id').val() == $cardId && newData.child('id').val().matches(/^[^<>'\"&]{1,128}$/) && newData.child('situacao').isString() && newData.child('situacao').val().matches(/^(Em andamento|Nota Devolutiva|Aguard. Retorno ND|Concluído|Arquivado)$/) && newData.child('priority').isString() && newData.child('priority').val().matches(/^(Alta|Média|Normal)$/) && newData.child('updatedAt').isString() && newData.child('updatedAt').val().length <= 40 && newData.child('updatedBy').isString() && newData.child('updatedBy').val() == auth.token.email && newData.child('updatedByName').isString() && newData.child('updatedByName').val().length >= 3 && newData.child('updatedByName').val().length <= 120 && newData.child('updatedByName').val().matches(/^[^<>]+$/)"
         }
       },
       "audit": {
         "$entryId": {
           ".write": "auth != null && auth.token.firebase.sign_in_provider == 'password' && !data.exists()",
-          ".validate": "newData.hasChildren(['id', 'type', 'savedAt', 'updatedBy', 'updatedByName']) && newData.child('id').isString() && newData.child('type').isString() && newData.child('savedAt').isString() && newData.child('updatedBy').val() == auth.token.email && newData.child('updatedByName').isString() && newData.child('updatedByName').val().length <= 120"
+          ".validate": "newData.hasChildren(['id', 'type', 'savedAt', 'updatedBy', 'updatedByName']) && newData.child('id').isString() && newData.child('id').val().matches(/^[^<>'\"&]{1,128}$/) && newData.child('type').isString() && newData.child('type').val().matches(/^(newCards|overrides)$/) && newData.child('savedAt').isString() && newData.child('savedAt').val().length <= 40 && newData.child('updatedBy').isString() && newData.child('updatedBy').val() == auth.token.email && newData.child('updatedByName').isString() && newData.child('updatedByName').val().length >= 3 && newData.child('updatedByName').val().length <= 120 && newData.child('updatedByName').val().matches(/^[^<>]+$/)"
         }
       }
     }
