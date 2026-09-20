@@ -585,22 +585,23 @@
   .col-cnt { min-width: 28px; padding: 3px 7px; font-size: 11px; }
   .col-body { padding: 9px; gap: 8px; }
   .col-empty { padding: 34px 12px; color: #8493a7; font-size: 12px; }
-  .card:not(.archived-compact) { min-height: 0; padding: 10px 10px 9px 14px; border-radius: 8px; }
-  .card::before { width: 3px; border-radius: 8px 0 0 8px; }
+  /* Cartoes: manter densidade, sem sacrificar a leitura operacional. */
+  .card:not(.archived-compact) { min-height: 108px; padding: 13px 13px 12px 17px; border-radius: 10px; }
+  .card::before { width: 4px; border-radius: 10px 0 0 10px; }
   .card:hover { transform: translateY(-1px); }
   .card:not(.archived-compact):hover { transform: translateY(-1px) scale(1.002); }
-  .card-top { margin-bottom: 5px; }
-  .card-aba { font-size: 9.5px; letter-spacing: 0.38px; }
-  .card-status { margin-bottom: 5px; padding: 2px 6px; font-size: 9px; }
-  .card-desc, .card:not(.archived-compact) .card-desc { margin-bottom: 7px; font-size: 12.5px; line-height: 1.35; -webkit-line-clamp: 2; min-height: 0; }
-  .card-identifier { margin: 0 0 5px; font-size: 10.5px; }
-  .card-workline { gap: 3px; margin: 0 0 6px; }
-  .work-chip { padding: 2px 5px; border-radius: 5px; font-size: 9.5px; }
-  .card-extra { margin: 0 0 6px; font-size: 10px; }
-  .card-meta { gap: 4px; padding-top: 6px; }
-  .cm, .pchip, .paychip, .pz { font-size: 9.5px; }
-  .card-audit { margin-top: 5px; padding-top: 5px; font-size: 9.5px; }
-  .card-select { width: 18px; height: 18px; flex-basis: 18px; }
+  .card-top { margin-bottom: 7px; }
+  .card-aba { font-size: 10.5px; letter-spacing: 0.42px; }
+  .card-status { margin-bottom: 7px; padding: 3px 7px; font-size: 9.5px; }
+  .card-desc, .card:not(.archived-compact) .card-desc { margin-bottom: 9px; font-size: 13px; line-height: 1.45; -webkit-line-clamp: 2; min-height: 37px; }
+  .card-identifier { margin: 0 0 6px; font-size: 11px; }
+  .card-workline { gap: 4px; margin: 0 0 8px; }
+  .work-chip { padding: 3px 6px; border-radius: 6px; font-size: 10px; }
+  .card-extra { margin: 0 0 8px; font-size: 10.5px; }
+  .card-meta { gap: 5px; padding-top: 8px; }
+  .cm, .pchip, .paychip, .pz { font-size: 10px; }
+  .card-audit { margin-top: 7px; padding-top: 7px; font-size: 10px; }
+  .card-select { width: 20px; height: 20px; flex-basis: 20px; }
   body.focus-mode .board { min-height: calc(100vh - 62px); padding-top: 10px; }
   body.focus-mode .column { max-height: calc(100vh - 78px); }
   @media (max-width: 1500px) { .header-filters { grid-template-columns: 1fr auto; } .view-tabs { grid-column: 1 / -1; width: max-content; } .filter-rail { min-width: 0; } }
