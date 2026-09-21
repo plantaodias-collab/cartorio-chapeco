@@ -827,6 +827,16 @@ const INITIAL_DATA = [];
 const FIREBASE_KEY = 'cartorio_firebase_url_v2';
 const DEFAULT_FIREBASE_URL = 'https://cartorio-chapeco-default-rtdb.firebaseio.com';
 const AUTH_CONFIG_KEY = 'cartorio_auth_config_v1';
+// Esta configuracao identifica o aplicativo Web; nao e uma credencial secreta.
+// A seguranca dos documentos continua nas regras do Realtime Database e no
+// login Email/Senha. Assim, computadores novos seguem direto para o login.
+const DEFAULT_AUTH_CONFIG = Object.freeze({
+  apiKey: 'AIzaSyCWjiE_9B2Fu6u5iu6J_9rZ5JgZHGF-bVM',
+  authDomain: 'cartorio-chapeco.firebaseapp.com',
+  projectId: 'cartorio-chapeco',
+  appId: '1:952673338176:web:d97bebf3f092954c2af0a5',
+  messagingSenderId: '952673338176'
+});
 const OPERATOR_KEY = 'cartorio_user_name';
 const OPERATOR_SELECTION_REQUIRED_KEY = 'cartorio_operator_selection_required_v1';
 const DB_PATH      = 'kanban';
@@ -1096,7 +1106,7 @@ function validateRetirementData(card, before) {
 // ═══════════════════════════════════════════════════════
 function showSetup() {
   document.getElementById('firebaseUrl').value = localStorage.getItem(FIREBASE_KEY) || DEFAULT_FIREBASE_URL;
-  document.getElementById('firebaseAuthConfig').value = localStorage.getItem(AUTH_CONFIG_KEY) || '';
+  document.getElementById('firebaseAuthConfig').value = JSON.stringify(getAuthConfig());
   document.getElementById('setup-screen').classList.remove('hidden');
 }
 function normalizeDatabaseUrl(value) {
@@ -1225,6 +1235,9 @@ function parseAuthConfig(raw) {
     return cfg && cfg.apiKey && cfg.authDomain && cfg.projectId ? cfg : null;
   } catch(e) { return null; }
 }
+function getAuthConfig() {
+  return parseAuthConfig(localStorage.getItem(AUTH_CONFIG_KEY) || '') || DEFAULT_AUTH_CONFIG;
+}
 function connectFirebase(rawUrl) {
   const url = normalizeDatabaseUrl(rawUrl);
   if (!url) {
@@ -1237,7 +1250,7 @@ function connectFirebase(rawUrl) {
   document.getElementById('loading').classList.remove('hidden');
   setSyncStatus('loading', 'Conectando ao banco compartilhado...');
   try {
-    const authConfig = parseAuthConfig(localStorage.getItem(AUTH_CONFIG_KEY) || '');
+    const authConfig = getAuthConfig();
     if (!authConfig) {
       document.getElementById('loading').classList.add('hidden');
       setSyncStatus('error', 'Autenticação obrigatória. Configure o Firebase Auth para continuar.');
@@ -1401,8 +1414,8 @@ async function saveItem(type, payload, before = null) {
   const savedUrl = localStorage.getItem(FIREBASE_KEY) || DEFAULT_FIREBASE_URL;
   if (!localStorage.getItem(FIREBASE_KEY)) localStorage.setItem(FIREBASE_KEY, savedUrl);
   document.getElementById('firebaseUrl').value = savedUrl;
-  document.getElementById('firebaseAuthConfig').value = localStorage.getItem(AUTH_CONFIG_KEY) || '';
-  const savedAuthConfig = parseAuthConfig(localStorage.getItem(AUTH_CONFIG_KEY) || '');
+  document.getElementById('firebaseAuthConfig').value = JSON.stringify(getAuthConfig());
+  const savedAuthConfig = getAuthConfig();
   if (savedAuthConfig) {
     document.getElementById('setup-screen').classList.add('hidden');
     connectFirebase(savedUrl);
